@@ -16,19 +16,24 @@
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-#include <serial/serial.h>
+// #include <serial/serial.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include "hdlc/frame.h"
 #include "hdlc/hdlc.h"
 
-using namespace curd;
-static auto m_log = spdlog::stdout_color_mt("curd");
+using namespace hdlc;
+static auto m_log = spdlog::stdout_color_mt("hdlc");
 
 int run(int argc, char **argv)
 {
 
   m_log->info("Running example.");
+
+  {
+    Frame f;
+  }
 
   return 0;
 }
