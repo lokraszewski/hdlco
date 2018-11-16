@@ -15,6 +15,48 @@ namespace hdlc
 
 boost::crc_basic<16> FrameSerializer::crc_ccitt = boost::crc_basic<16>(0x1021, 0xFFFF, 0, false, false);
 
+auto FrameSerializer::get_frame_type(const uint8_t control)
+{
+  if ((control & 1) == 0) // bit 0 clear indicates information frame.
+  {
+    return Frame::Type::INFORMATION;
+  }
+  else if ((control & 0b11) == 0b01) // bit pattern 0b01 indicates S frame
+  {
+    return static_cast<Frame::Type>(control & 0xF);
+  }
+  else
+  {
+    auto type = static_cast<Frame::Type>(control & ~(1 << 5));
+    switch (type)
+    {
+    case Frame::Type::INFORMATION:
+    case Frame::Type::RECEIVE_READY:
+    case Frame::Type::RECEIVE_NOT_READY:
+    case Frame::Type::REJECT:
+    case Frame::Type::SELECTIVE_REJECT:
+    case Frame::Type::UNNUMBERED_INFORMATION:
+    case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
+    case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
+    case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE:
+    case Frame::Type::INITIALIZATION:
+    case Frame::Type::DISCONNECT:
+    case Frame::Type::UNNUMBERED_POLL:
+    case Frame::Type::RESET:
+    case Frame::Type::EXCHANGE_IDENTIFICATION:
+    case Frame::Type::FRAME_REJECT:
+    case Frame::Type::NONRESERVED0:
+    case Frame::Type::NONRESERVED2:
+    case Frame::Type::SET_NORMAL_RESPONSE_MODE:
+    case Frame::Type::NONRESERVED1:
+    case Frame::Type::NONRESERVED3:
+    case Frame::Type::TEST:
+    case Frame::Type::UNSET: return type;
+    default: return Frame::Type::UNSET;
+    }
+  }
+}
+
 const std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
 {
   std::vector<uint8_t> frame_serialized;
@@ -39,13 +81,13 @@ const std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
   case Frame::Type::RESET:
   case Frame::Type::EXCHANGE_IDENTIFICATION:
   case Frame::Type::FRAME_REJECT:
+  case Frame::Type::SET_NORMAL_RESPONSE_MODE:
   case Frame::Type::NONRESERVED0:
   case Frame::Type::NONRESERVED2:
-  case Frame::Type::SET_NORMAL_RESPONSE_MODE:
   case Frame::Type::NONRESERVED1:
   case Frame::Type::NONRESERVED3:
-  case Frame::Type::TEST:
-  case Frame::Type::UNSET: break;
+  case Frame::Type::TEST: break;
+  case Frame::Type::UNSET:
   default: assert(false); // Unknown frame type;
   }
 
@@ -113,11 +155,38 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   std::advance(end, -3); // Consume FCS and frame boundary.
 
-  auto address = *it++;
-  auto control = *it++;
+  auto       address     = *it++;
+  auto       control     = *it++;
+  auto       poll        = (control >> 5) & 0b1;
+  const auto type        = get_frame_type(control);
+  const auto send_seq    = (control >> 1) & 0b111;
+  const auto recieve_seq = (control >> 5) & 0b111;
 
-  Frame f;
-  return f;
+  switch (type)
+  {
+  case Frame::Type::INFORMATION: return Frame(type, poll, address, send_seq, recieve_seq, it, end);
+  case Frame::Type::RECEIVE_READY:
+  case Frame::Type::RECEIVE_NOT_READY:
+  case Frame::Type::REJECT:
+  case Frame::Type::SELECTIVE_REJECT: return Frame(type, poll, address, 0, recieve_seq, it, end);
+  case Frame::Type::UNNUMBERED_INFORMATION: return Frame(type, poll, address, 0, 0, it, end);
+  case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
+  case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
+  case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE:
+  case Frame::Type::INITIALIZATION:
+  case Frame::Type::DISCONNECT:
+  case Frame::Type::UNNUMBERED_POLL:
+  case Frame::Type::RESET:
+  case Frame::Type::EXCHANGE_IDENTIFICATION:
+  case Frame::Type::FRAME_REJECT:
+  case Frame::Type::NONRESERVED0:
+  case Frame::Type::NONRESERVED2:
+  case Frame::Type::SET_NORMAL_RESPONSE_MODE:
+  case Frame::Type::NONRESERVED1:
+  case Frame::Type::NONRESERVED3:
+  case Frame::Type::TEST: return Frame(type, poll, address);
+  default: return Frame(Frame::Type::UNSET);
+  }
 }
 
 std::vector<uint8_t> FrameSerializer::descape(const std::vector<uint8_t> &buffer)
@@ -175,47 +244,5 @@ bool FrameSerializer::is_checksum_valid(iterator_t begin, iterator_t end)
 }
 
 bool FrameSerializer::is_checksum_valid(std::vector<uint8_t> &buffer) { return is_checksum_valid(buffer.begin(), buffer.end()); }
-
-static auto get_frame_type(const uint8_t control)
-{
-  if ((control & 1) == 0) // bit 0 clear indicates information frame.
-  {
-    return Frame::Type::INFORMATION;
-  }
-  else if ((control & 0b11) == 0b01) // bit pattern 0b01 indicates S frame
-  {
-    return static_cast<Frame::Type>(control & 0xF);
-  }
-  else
-  {
-    auto type = static_cast<Frame::Type>(control & ~(1 << 5));
-    switch (type)
-    {
-    case Frame::Type::INFORMATION:
-    case Frame::Type::RECEIVE_READY:
-    case Frame::Type::RECEIVE_NOT_READY:
-    case Frame::Type::REJECT:
-    case Frame::Type::SELECTIVE_REJECT:
-    case Frame::Type::UNNUMBERED_INFORMATION:
-    case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
-    case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
-    case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE:
-    case Frame::Type::INITIALIZATION:
-    case Frame::Type::DISCONNECT:
-    case Frame::Type::UNNUMBERED_POLL:
-    case Frame::Type::RESET:
-    case Frame::Type::EXCHANGE_IDENTIFICATION:
-    case Frame::Type::FRAME_REJECT:
-    case Frame::Type::NONRESERVED0:
-    case Frame::Type::NONRESERVED2:
-    case Frame::Type::SET_NORMAL_RESPONSE_MODE:
-    case Frame::Type::NONRESERVED1:
-    case Frame::Type::NONRESERVED3:
-    case Frame::Type::TEST:
-    case Frame::Type::UNSET: return type;
-    default: return Frame::Type::UNSET;
-    }
-  }
-}
 
 } // namespace hdlc
