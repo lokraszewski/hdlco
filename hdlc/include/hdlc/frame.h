@@ -42,27 +42,23 @@ public:
     UNSET                          = 0xFF,
   };
 
-  Frame() {}
-  Frame(const Type type) : m_type(type) {}
-
-  Frame(const Type type, const bool poll, const uint8_t address = 0xFF, const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
+  Frame(const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF, const uint8_t recieve_seq = 0,
+        const uint8_t send_seq = 0)
       : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(send_seq), m_send_seq(recieve_seq)
   {
   }
 
   template <typename buffer_t>
-  Frame(const buffer_t& buffer) : m_type(Type::INFORMATION), m_poll_flag(true), m_payload(buffer.begin(), buffer.end())
+  Frame(const buffer_t& buffer, const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF,
+        const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
+      : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(send_seq), m_send_seq(recieve_seq),
+        m_payload(buffer.begin(), buffer.end())
   {
   }
 
   template <typename iter_t>
-  Frame(iter_t begin, iter_t end) : m_type(Type::INFORMATION), m_poll_flag(true), m_payload(begin, end)
-  {
-  }
-
-  template <typename iter_t>
-  Frame(const Type type, const bool poll, const uint8_t address, const uint8_t recieve_seq, const uint8_t send_seq, iter_t begin,
-        iter_t end)
+  Frame(iter_t begin, iter_t end, const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF,
+        const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
       : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(send_seq), m_send_seq(recieve_seq), m_payload(begin, end)
   {
   }

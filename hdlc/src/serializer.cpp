@@ -164,12 +164,12 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   switch (type)
   {
-  case Frame::Type::INFORMATION: return Frame(type, poll, address, send_seq, recieve_seq, it, end);
+  case Frame::Type::INFORMATION: return Frame(it, end, type, poll, address, recieve_seq, send_seq);
   case Frame::Type::RECEIVE_READY:
   case Frame::Type::RECEIVE_NOT_READY:
   case Frame::Type::REJECT:
-  case Frame::Type::SELECTIVE_REJECT: return Frame(type, poll, address, 0, recieve_seq, it, end);
-  case Frame::Type::UNNUMBERED_INFORMATION: return Frame(type, poll, address, 0, 0, it, end);
+  case Frame::Type::SELECTIVE_REJECT: return Frame(it, end, type, poll, address, recieve_seq);
+  case Frame::Type::UNNUMBERED_INFORMATION: return Frame(it, end, type, poll, address);
   case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
   case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
   case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE:
