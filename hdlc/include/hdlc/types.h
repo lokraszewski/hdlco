@@ -16,4 +16,16 @@ enum protocol_bytes : uint8_t
   escape         = 0x7D,
 };
 
+enum protocol
+{
+  FRAME_MIN_SIZE = 6,
+};
+
+enum class StatusError
+{
+  Success,
+  InvalidParameters,
+  ErrorFatal,
+};
+
 } // namespace hdlc

@@ -23,29 +23,37 @@ public:
     RECEIVE_NOT_READY              = 0b00001001,
     REJECT                         = 0b00000101,
     SELECTIVE_REJECT               = 0b00001101,
-    SET_NORMAL_RESPONSE_MODE       = 0b10000011,
-    SET_ASYNCHRONOUS_RESPONSE_MODE = 0b00001111,
-    SET_ASYNCHRONOUS_BALANCED_MODE = 0b00101111,
-    SET_INITIALIZATION_MODE        = 0b00000111,
-    DISCONNECT                     = 0b01000011,
-    UNNUMBERED_ACKNOWLEDGMENT      = 0b01110011,
-    DISCONNECT_MODE                = 0b00011111,
-    REQUEST_DISCONNECT             = 0b01010011,
-    REQUEST_INITIALIZATION         = 0b00010111,
     UNNUMBERED_INFORMATION         = 0b00000011,
+    SET_ASYNCHRONOUS_BALANCED_MODE = 0b00101111,
+    UNNUMBERED_ACKNOWLEDGMENT      = 0b01100011,
+    SET_ASYNCHRONOUS_RESPONSE_MODE = 0b00001111,
+    INITIALIZATION                 = 0b00000111,
+    DISCONNECT                     = 0b01000011,
     UNNUMBERED_POLL                = 0b00100011,
     RESET                          = 0b10001111,
     EXCHANGE_IDENTIFICATION        = 0b10101111,
-    TEST                           = 0b11100011,
-    FRAME_REJECT                   = 0b10010111,
+    FRAME_REJECT                   = 0b10000111,
     NONRESERVED0                   = 0b00001011,
-    NONRESERVED1                   = 0b10001011,
     NONRESERVED2                   = 0b01001011,
+    SET_NORMAL_RESPONSE_MODE       = 0b10000011,
+    NONRESERVED1                   = 0b10001011,
     NONRESERVED3                   = 0b11001011,
+    TEST                           = 0b11100011,
     UNSET                          = 0xFF,
   };
 
   Frame() {}
+  Frame(const Type type) : m_type(type) {}
+
+  template <typename buffer_t>
+  Frame(const buffer_t& buffer) : m_type(Type::INFORMATION), m_poll_flag(true), m_payload(buffer.begin(), buffer.end())
+  {
+  }
+
+  template <typename iter_t>
+  Frame(iter_t begin, iter_t end) : m_type(Type::INFORMATION), m_poll_flag(true), m_payload(begin, end)
+  {
+  }
 
   void set_address(const uint8_t address) noexcept { m_address = address; }
   auto get_address(void) const noexcept { return m_address; }
@@ -64,17 +72,15 @@ public:
   auto get_recieve_sequence() const noexcept { return m_recieve_seq; }
   auto get_send_sequence() const noexcept { return m_send_seq; }
   auto has_payload() const noexcept { return !m_payload.empty(); }
-
-  const std::vector<uint8_t>& get_payload() const { return m_payload; }
-  void                        set_payload(const std::vector<unsigned char>& payload) { m_payload = payload; }
-
+  void set_payload(const std::vector<unsigned char>& payload) { m_payload = payload; }
   auto begin() const { return m_payload.begin(); }
   auto end() const { return m_payload.end(); }
+  const std::vector<uint8_t>& get_payload() const { return m_payload; }
 
 private:
   Type                 m_type        = Type::UNSET;
   bool                 m_poll_flag   = false;
-  uint8_t              m_address     = 0;
+  uint8_t              m_address     = 0xFF;
   uint8_t              m_recieve_seq = 0;
   uint8_t              m_send_seq    = 0;
   std::vector<uint8_t> m_payload;
