@@ -1,13 +1,14 @@
 /*
  * @Author: lokraszewski
  * @Date:   15-11-2018
- * @Last Modified by:   lokraszewski
- * @Last Modified time: 15-11-2018
+ * @Last Modified by:   Lukasz
+ * @Last Modified time: 16-11-2018
  */
 
 #pragma once
 
 #include "types.h"
+#include <vector>
 
 namespace hdlc
 {
@@ -36,6 +37,9 @@ public:
   };
 
   Frame() {}
+
+  void set_address(const uint8_t address) noexcept { m_address = address; }
+  auto get_address(void) const noexcept { return m_address; }
 
   void set_type(const Type type) noexcept { m_type = type; }
   auto get_type() const noexcept { return m_type; }

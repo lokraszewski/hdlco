@@ -1,9 +1,10 @@
 
 ## Add serial library
-add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME}
+  src/stream_helper.cpp)
 
 target_include_directories(${PROJECT_NAME}
-    INTERFACE
+    PUBLIC
         $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
