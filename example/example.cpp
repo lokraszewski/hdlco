@@ -23,6 +23,7 @@
 
 #include "hdlc/frame.h"
 #include "hdlc/hdlc.h"
+#include "hdlc/serializer.h"
 #include "hdlc/stream_helper.h"
 
 using namespace hdlc;
@@ -35,21 +36,33 @@ int run(int argc, char **argv)
 
   // Default frame
   {
-    std::vector<uint8_t> payload = {0, 1, 2, 3, 4};
-    Frame                f;
+    Frame f;
     m_log->info("Created default frame : {}", f);
+  }
+
+  // Info frame
+  {
+    Frame                f;
+    std::vector<uint8_t> payload = {0, 0x7E, 2, 0x7D, 4};
     f.set_address(0xFF);
-    m_log->info(" frame : {}", f);
     f.set_type(Frame::Type::INFORMATION);
-    m_log->info(" frame : {}", f);
     f.set_poll(true);
-    m_log->info(" frame : {}", f);
     f.set_recieve_sequence(1);
-    m_log->info(" frame : {}", f);
     f.set_send_sequence(2);
-    m_log->info(" frame : {}", f);
     f.set_payload(payload);
-    m_log->info(" frame : {}", f);
+    m_log->info("Created info frame : {}", f);
+
+    auto f_serial = FrameSerializer::serialize(f);
+    m_log->info("Serialized:");
+    for (auto c : f_serial) std::cout << fmt::format("{:#x} ", c);
+    std::cout << std::endl;
+
+    auto f_escaped = FrameSerializer::escape(f_serial);
+    m_log->info("escaped:");
+    for (auto c : f_escaped) std::cout << fmt::format("{:#x} ", c);
+    std::cout << std::endl;
+
+    // escape
   }
 
   return 0;

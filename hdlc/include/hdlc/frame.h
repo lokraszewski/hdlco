@@ -16,24 +16,33 @@ namespace hdlc
 class Frame
 {
 public:
-  enum class Type
+  enum class Type : uint8_t
   {
-    UNSET = 0,
-    INFORMATION,
-    RECEIVE_READY,                  // SUPERVISORY
-    RECEIVE_NOT_READY,              // SUPERVISORY
-    REJECT,                         // SUPERVISORY
-    SELECTIVE_REJECT,               // SUPERVISORY
-    UNNUMBERED_INFORMATION,         // UNNUMBERED
-    UNNUMBERED_POLL,                // UNNUMBERED
-    UNNUMBERED_ACKNOWLEDGMENT,      // UNNUMBERED
-    SET_INITIALIZATION_MODE,        // UNNUMBERED
-    SET_ASYNCHRONOUS_RESPONSE,      // UNNUMBERED
-    SET_NORMAL_RESPONSE,            // UNNUMBERED
-    SET_ASYNCHRONOUS_BALANCED_MODE, // UNNUMBERED
-    DISCONNECT,                     // UNNUMBERED
-    TEST,                           // UNNUMBERED
-    EXCHANGE_IDENTIFICATION,        // UNNUMBERED
+    INFORMATION                    = 0b00000000,
+    RECEIVE_READY                  = 0b00000001,
+    RECEIVE_NOT_READY              = 0b00001001,
+    REJECT                         = 0b00000101,
+    SELECTIVE_REJECT               = 0b00001101,
+    SET_NORMAL_RESPONSE_MODE       = 0b10000011,
+    SET_ASYNCHRONOUS_RESPONSE_MODE = 0b00001111,
+    SET_ASYNCHRONOUS_BALANCED_MODE = 0b00101111,
+    SET_INITIALIZATION_MODE        = 0b00000111,
+    DISCONNECT                     = 0b01000011,
+    UNNUMBERED_ACKNOWLEDGMENT      = 0b01110011,
+    DISCONNECT_MODE                = 0b00011111,
+    REQUEST_DISCONNECT             = 0b01010011,
+    REQUEST_INITIALIZATION         = 0b00010111,
+    UNNUMBERED_INFORMATION         = 0b00000011,
+    UNNUMBERED_POLL                = 0b00100011,
+    RESET                          = 0b10001111,
+    EXCHANGE_IDENTIFICATION        = 0b10101111,
+    TEST                           = 0b11100011,
+    FRAME_REJECT                   = 0b10010111,
+    NONRESERVED0                   = 0b00001011,
+    NONRESERVED1                   = 0b10001011,
+    NONRESERVED2                   = 0b01001011,
+    NONRESERVED3                   = 0b11001011,
+    UNSET                          = 0xFF,
   };
 
   Frame() {}
@@ -43,36 +52,11 @@ public:
 
   void set_type(const Type type) noexcept { m_type = type; }
   auto get_type() const noexcept { return m_type; }
+  auto is_payload_type() const noexcept { return m_type == Type::INFORMATION || m_type == Type::UNNUMBERED_INFORMATION; }
   auto is_empty() const noexcept { return m_type == Type::UNSET; }
   bool is_information() const noexcept { return m_type == Type::INFORMATION; }
-  bool is_supervisory() const noexcept
-  {
-    switch (m_type)
-    {
-    case Type::RECEIVE_READY:
-    case Type::RECEIVE_NOT_READY:
-    case Type::REJECT:
-    case Type::SELECTIVE_REJECT: return true;
-    default: return false;
-    }
-  }
-  bool is_unnumbered() const noexcept
-  {
-    switch (m_type)
-    {
-    case Type::UNNUMBERED_INFORMATION:
-    case Type::UNNUMBERED_POLL:
-    case Type::UNNUMBERED_ACKNOWLEDGMENT:
-    case Type::SET_INITIALIZATION_MODE:
-    case Type::SET_ASYNCHRONOUS_RESPONSE:
-    case Type::SET_NORMAL_RESPONSE:
-    case Type::SET_ASYNCHRONOUS_BALANCED_MODE:
-    case Type::DISCONNECT:
-    case Type::TEST:
-    case Type::EXCHANGE_IDENTIFICATION: return true;
-    default: return false;
-    }
-  }
+  bool is_supervisory() const noexcept { return (static_cast<uint8_t>(m_type) & 0b11) == 0b01; }
+  bool is_unnumbered() const noexcept { return !is_empty() && (static_cast<uint8_t>(m_type) & 0b11) == 0b11; }
   void set_poll(bool poll) noexcept { m_poll_flag = poll; }
   auto is_poll() const noexcept { return m_poll_flag; }
   void set_recieve_sequence(const uint8_t sequence) noexcept { m_recieve_seq = sequence; }
@@ -83,6 +67,9 @@ public:
 
   const std::vector<uint8_t>& get_payload() const { return m_payload; }
   void                        set_payload(const std::vector<unsigned char>& payload) { m_payload = payload; }
+
+  auto begin() const { return m_payload.begin(); }
+  auto end() const { return m_payload.end(); }
 
 private:
   Type                 m_type        = Type::UNSET;

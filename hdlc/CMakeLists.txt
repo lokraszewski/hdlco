@@ -1,7 +1,9 @@
 
 ## Add serial library
 add_library(${PROJECT_NAME}
-  src/stream_helper.cpp)
+  src/stream_helper.cpp
+  src/serializer.cpp
+  )
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
