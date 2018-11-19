@@ -14,6 +14,8 @@ addons:
     packages:
       - clang-6.0
       - cmake
+      - libc++-dev
+      - libc++abi-dev
 
 before_install:
   - eval "${MATRIX_EVAL}"
