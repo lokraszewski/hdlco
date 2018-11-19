@@ -11,6 +11,13 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
+
+set_target_properties(${PROJECT_NAME}
+  PROPERTIES
+    CXX_STANDARD 17
+)
+
+
 include(GNUInstallDirs)
 
 set(config_install_dir "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
