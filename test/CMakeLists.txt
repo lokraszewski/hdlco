@@ -1,4 +1,3 @@
-
 add_executable(hdlc_test hdlc_test.cpp )
 
 target_link_libraries(hdlc_test
