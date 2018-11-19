@@ -11,5 +11,5 @@ target_link_libraries(example
 
 set_target_properties(example
   PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD 14
 )

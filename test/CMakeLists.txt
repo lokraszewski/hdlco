@@ -7,5 +7,5 @@ target_link_libraries(hdlc_test
 
 set_target_properties(hdlc_test
   PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD 14
 )
