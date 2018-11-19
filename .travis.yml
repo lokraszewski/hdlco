@@ -1,10 +1,7 @@
 dist: trusty
 sudo: required
-language: generic
-
-matrix:
-    include:
-    - env: CXX=clang++-6.0 CC=clang-6.0
+language: cpp
+compiler: clang
 
 addons:
   apt:
@@ -14,12 +11,11 @@ addons:
     packages:
       - libstdc++-7-dev
       - clang-6.0
+      - clang
       - cmake
 
-install:
-  # Install conan
-  - pip install conan --user
-  # Automatic detection of your arch, compiler, etc.
+before_install:
+  - sudo pip install conan
   - conan user
 
 script:
