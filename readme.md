@@ -1,0 +1,113 @@
+# HDLC High-Level Data Link Control Open
+This small library provides the means to create and serilize HDLC frames in the non-extended mode.
+
+## Frame Structure
+<table class="wikitable">
+   <tbody>
+      <tr>
+         <th>Flag</th>
+         <th>Address</th>
+         <th>Control</th>
+         <th>Information</th>
+         <th>FCS</th>
+         <th>Flag</th>
+      </tr>
+      <tr>
+         <td>8 bits</td>
+         <td>8 or more bits</td>
+         <td>8</td>
+         <td>Variable length, 8×<i>n</i> bits</td>
+         <td>16</td>
+         <td>8 bits</td>
+      </tr>
+   </tbody>
+</table>
+
+Note that the end flag of one frame may be (but does not have to be) the beginning (start) flag of the next frame.
+
+Data is usually sent in multiples of 8 bits, but only some variants require this; others theoretically permit data alignments on other than 8-bit boundaries.
+
+The frame check sequence (FCS) is a 16-bit CRC-CCITT or a 32-bit CRC-32 computed over the Address, Control, and Information fields. It provides a means by which the receiver can detect errors that may have been induced during the transmission of the frame, such as lost bits, flipped bits, and extraneous bits. However, given that the algorithms used to calculate the FCS are such that the probability of certain types of transmission errors going undetected increases with the length of the data being checked for errors, the FCS can implicitly limit the practical size of the frame.
+
+If the receiver's calculation of the FCS does not match that of the sender's, indicating that the frame contains errors, the receiver can either send a negative acknowledge packet to the sender, or send nothing. After either receiving a negative acknowledge packet or timing out waiting for a positive acknowledge packet, the sender can retransmit the failed frame.
+
+## Asynchronous framing
+When using asynchronous serial communication such as standard RS-232 serial ports, synchronous-style bit stuffing is inappropriate for several reasons:
+* Bit stuffing is not needed to ensure an adequate number of transitions, as start and stop bits provide that,
+* Because the data is NRZ encoded for transmission, rather than NRZI encoded, the encoded waveform is different,
+ * RS-232 sends bits in groups of 8, making adding single bits very awkward, and
+* For the same reason, it is only necessary to specially code flag bytes; thus it is not necessary to worry about the bit pattern straddling multiple bytes.
+
+Instead asynchronous framing uses "control-octet transparency", also called "byte stuffing" or "octet stuffing". The frame boundary octet is 01111110, (0x7E in hexadecimal notation). A "control escape octet", has the value 0x7D (bit sequence '10111110', as RS-232 transmits least-significant bit first). If either of these two octets appears in the transmitted data, an escape octet is sent, followed by the original data octet with bit 5 inverted. For example, the byte 0x7E would be transmitted as 0x7D 0x5E ("10111110 01111010"). Other reserved octet values (such as XON or XOFF) can be escaped in the same way if necessary.
+
+The "abort sequence" 0x7D 0x7E ends a packet with an incomplete byte-stuff sequence, forcing the receiver to detect an error. This can be used to abort packet transmission with no chance the partial packet will be interpreted as valid by the receiver.
+
+## Frame types:
+* Information frames, or I-frames, transport user data from the network layer. In addition they can also include flow and error control information piggybacked on data.
+* Supervisory Frames, or S-frames, are used for flow and error control whenever piggybacking is impossible or inappropriate, such as when a station does not have data to send. S-frames do not have information fields.
+* Unnumbered frames, or U-frames, are used for various miscellaneous purposes, including link management. Some U-frames contain an information field, depending on the typ
+
+### Control Field
+<table  style="text-align:center">
+   <caption>HDLC control fields</caption>
+   <tbody>
+      <tr>
+         <th>7</th>
+         <th>6</th>
+         <th>5</th>
+         <th>4</th>
+         <th>3</th>
+         <th>2</th>
+         <th>1</th>
+         <th>0</th>
+         <th></th>
+      </tr>
+      <tr>
+         <td colspan="3">N(R)<br>Receive sequence no.</td>
+         <td>P/F</td>
+         <td colspan="3">N(S)<br>Send sequence no.</td>
+         <td>0</td>
+         <th>I-frame</th>
+      </tr>
+      <tr>
+         <td colspan="3">N(R)<br>Receive sequence no.</td>
+         <td>P/F</td>
+         <td colspan="2">type</td>
+         <td>0</td>
+         <td>1</td>
+         <th>S-frame</th>
+      </tr>
+      <tr>
+         <td colspan="3">type</td>
+         <td>P/F</td>
+         <td colspan="2">type</td>
+         <td>1</td>
+         <td>1</td>
+         <th>U-frame</th>
+      </tr>
+   </tbody>
+</table>
+
+
+## Prerequisites
+* [cmake](https://cmake.org/)
+* [conan](https://conan.io/)
+
+## Build
+```
+mkdir build
+cd build
+conan install .. 
+cmake .. && make
+```
+
+## Running tests
+```
+./bin/hdlc_test
+```
+
+
+## TODOs ##
+
+## Other HDLC related repositories 
+See the list of [contributors](https://github.com/lokraszewski/ADS1115/contributors) who participated in this project.

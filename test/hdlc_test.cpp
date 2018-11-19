@@ -12,12 +12,10 @@
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-// #include <serial/serial.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "hdlc/blocking_connection_simple.h"
 #include "hdlc/frame.h"
 #include "hdlc/hdlc.h"
 #include "hdlc/serializer.h"
@@ -28,16 +26,6 @@
 #include "catch.hpp"
 
 static auto l_log = spdlog::stdout_color_mt("hdlc_test");
-
-namespace
-{
-template <typename T>
-void byte_vector_print(T& buffer)
-{
-  for (auto c : buffer) std::cout << fmt::format("{:#x} ", c);
-  std::cout << std::endl;
-}
-}; // namespace
 
 using namespace hdlc;
 TEST_CASE("Frame Creation")
@@ -89,7 +77,7 @@ TEST_CASE("Frame Creation")
     REQUIRE(escaped_bytes[9] == (0x7d ^ 0x20));
   }
 
-  SECTION("De-escape")
+  SECTION("De-escape & decode")
   {
     const auto payload = std::vector<uint8_t>({1, 2, 3, 0x7e, 0x7d, 4});
     Frame      frame(payload, Frame::Type::INFORMATION, true, 0x11, 1, 2);
