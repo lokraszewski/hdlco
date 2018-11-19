@@ -16,9 +16,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "hdlc/frame.h"
 #include "hdlc/hdlc.h"
-#include "hdlc/serializer.h"
 #include "hdlc/stream_helper.h"
 
 #define CATCH_CONFIG_MAIN // This tells Catch to provide a main() - only do this in one cpp file
