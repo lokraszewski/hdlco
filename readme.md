@@ -1,4 +1,6 @@
 # HDLC High-Level Data Link Control 
+[![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=master)](https://travis-ci.com/lokraszewski/hdlco)
+
 This small library provides the means to create and serilize HDLC frames in the non-extended mode.
 
 ## Frame Structure
