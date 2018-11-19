@@ -11,6 +11,13 @@ addons:
     packages:
       - clang
       - cmake
+
+install:
+# Install conan
+- pip install conan
+# Automatic detection of your arch, compiler, etc.
+- conan user
+
 script:
   - mkdir build && cd build
   - conan --install ..
