@@ -1,13 +1,13 @@
 dist: trusty
 sudo: required
-language:
-  - cpp
-compiler:
-  - clang
+language: cpp
+compiler: clang
+
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-6.0
     packages:
       - libstdc++-7-dev
       - clang-6.0
