@@ -24,6 +24,4 @@ script:
   - mkdir build && cd build
   - conan install .. --build missing
   - cmake .. && make
-
-  # Run the unit tests.
-  # - ./bin/unit_tests
+  - ./bin/hdlc_test
