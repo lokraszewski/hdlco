@@ -20,7 +20,7 @@ install:
 
 script:
   - mkdir build && cd build
-  - conan --install ..
+  - conan install ..
   - cmake .. && make
 
   # Run the unit tests.
