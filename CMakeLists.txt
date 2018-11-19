@@ -31,6 +31,7 @@ endif()
 
 add_subdirectory(${PROJECT_NAME})
 add_subdirectory(example)
+add_subdirectory(test)
 
 
 

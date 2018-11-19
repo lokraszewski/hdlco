@@ -67,10 +67,10 @@ std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
   case Frame::Type::RECEIVE_READY:
   case Frame::Type::RECEIVE_NOT_READY:
   case Frame::Type::REJECT:
-  case Frame::Type::SELECTIVE_REJECT:
-    control_byte |= (frame.get_recieve_sequence() & 0x3) << 5;
-    /* fall through*/
-  case Frame::Type::INFORMATION: control_byte |= (frame.get_send_sequence() & 0x3) << 1; break;
+  case Frame::Type::SELECTIVE_REJECT: control_byte |= (frame.get_recieve_sequence() & 0b111) << 5; break;
+  case Frame::Type::INFORMATION:
+    control_byte |= (frame.get_send_sequence() & 0b111) << 1 | (frame.get_recieve_sequence() & 0b111) << 5;
+    break;
   case Frame::Type::UNNUMBERED_INFORMATION:
   case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
   case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:

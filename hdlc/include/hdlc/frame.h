@@ -44,14 +44,14 @@ public:
 
   Frame(const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF, const uint8_t recieve_seq = 0,
         const uint8_t send_seq = 0)
-      : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(send_seq), m_send_seq(recieve_seq)
+      : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(recieve_seq & 0b111), m_send_seq(send_seq & 0b111)
   {
   }
 
   template <typename buffer_t>
   Frame(const buffer_t& buffer, const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF,
         const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
-      : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(send_seq), m_send_seq(recieve_seq),
+      : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(recieve_seq & 0b111), m_send_seq(send_seq & 0b111),
         m_payload(buffer.begin(), buffer.end())
   {
   }
@@ -59,7 +59,8 @@ public:
   template <typename iter_t>
   Frame(iter_t begin, iter_t end, const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF,
         const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
-      : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(send_seq), m_send_seq(recieve_seq), m_payload(begin, end)
+      : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(recieve_seq & 0b111), m_send_seq(send_seq & 0b111),
+        m_payload(begin, end)
   {
   }
 
@@ -75,15 +76,43 @@ public:
   bool is_unnumbered() const noexcept { return !is_empty() && (static_cast<uint8_t>(m_type) & 0b11) == 0b11; }
   void set_poll(bool poll) noexcept { m_poll_flag = poll; }
   auto is_poll() const noexcept { return m_poll_flag; }
-  void set_recieve_sequence(const uint8_t sequence) noexcept { m_recieve_seq = sequence; }
-  void set_send_sequence(const uint8_t sequence) noexcept { m_send_seq = sequence; }
+  void set_recieve_sequence(const uint8_t sequence) noexcept { m_recieve_seq = sequence & 0b111; }
+  void set_send_sequence(const uint8_t sequence) noexcept { m_send_seq = sequence & 0b111; }
   auto get_recieve_sequence() const noexcept { return m_recieve_seq; }
   auto get_send_sequence() const noexcept { return m_send_seq; }
-  auto has_payload() const noexcept { return !m_payload.empty(); }
-  void set_payload(const std::vector<unsigned char>& payload) { m_payload = payload; }
-  auto begin() const { return m_payload.begin(); }
-  auto end() const { return m_payload.end(); }
+
+  auto                        begin() const { return m_payload.begin(); }
+  auto                        end() const { return m_payload.end(); }
+  auto                        payload_size() const noexcept { return m_payload.size(); }
   const std::vector<uint8_t>& get_payload() const { return m_payload; }
+  auto                        has_payload() const noexcept { return !m_payload.empty(); }
+  void                        set_payload(const std::vector<unsigned char>& payload) { m_payload = payload; }
+  template <typename iter_t>
+  void set_payload(iter_t begin, iter_t end)
+  {
+    m_payload.reserve(end - begin);
+    copy(begin, end, std::back_inserter(m_payload));
+  }
+
+  bool operator==(const Frame& other) const
+  {
+    if (m_type != other.get_type())
+      return false;
+    if (m_address != other.get_address())
+      return false;
+    if (m_poll_flag != other.is_poll())
+      return false;
+    if (m_recieve_seq != other.get_recieve_sequence())
+      return false;
+    if (m_send_seq != other.get_send_sequence())
+      return false;
+    if (m_payload.size() != other.payload_size())
+      return false;
+
+    return std::equal(m_payload.begin(), m_payload.end(), other.begin());
+  }
+
+  bool operator!=(const Frame& other) const { return !(*this == other); }
 
 private:
   Type                 m_type        = Type::UNSET;
