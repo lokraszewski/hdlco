@@ -1,0 +1,20 @@
+dist: trusty
+sudo: required
+language:
+  - cpp
+compiler:
+  - clang
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - clang
+      - cmake
+script:
+  - mkdir build && cd build
+  - conan --install ..
+  - cmake .. && make
+
+  # Run the unit tests.
+  # - ./bin/unit_tests
