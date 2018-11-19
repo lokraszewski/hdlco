@@ -1,6 +1,7 @@
 dist: trusty
 sudo: required
 language: cpp
+compiler: clang
 
 addons:
   apt:
@@ -25,4 +26,3 @@ script:
 
   # Run the unit tests.
   # - ./bin/unit_tests
-
