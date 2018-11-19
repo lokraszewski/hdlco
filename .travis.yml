@@ -4,8 +4,7 @@ language: cpp
 compiler: clang
 
 env:
-   - CC=clang-6.0
-   - CXX=clang++-6.0
+   - CC=clang-6.0 CXX=clang++-6.0
 addons:
   apt:
     sources:
