@@ -21,7 +21,7 @@ install:
 
 script:
   - mkdir build && cd build
-  - conan install .. -pr ../profile/clang
+  - conan install .. -pr ../profile/clang --build missing
   - cmake .. && make
 
   # Run the unit tests.
