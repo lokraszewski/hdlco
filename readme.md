@@ -1,4 +1,4 @@
-# HDLC High-Level Data Link Control Open
+# HDLC High-Level Data Link Control 
 This small library provides the means to create and serilize HDLC frames in the non-extended mode.
 
 ## Frame Structure
@@ -89,6 +89,11 @@ The "abort sequence" 0x7D 0x7E ends a packet with an incomplete byte-stuff seque
 </table>
 
 
+## Design Notes
+* Currently the library only provides the means to create and serilize HDLC frames, there is no transfer implementaion or session management. This is difficult to implement since I would like for this library to be usable on both desktop and embedded platforms hence for the time being it is up to the user to implement transfer of serialized frames. 
+* The underlaying storage type is vector which requires heap allocation, on embedded platforms I have tested this with FreeRTOS allocator with little issues but it may be easier to operate on buffers that have been pre-allocated. 
+
+
 ## Prerequisites
 * [cmake](https://cmake.org/)
 * [conan](https://conan.io/)
@@ -106,8 +111,10 @@ cmake .. && make
 ./bin/hdlc_test
 ```
 
-
 ## TODOs ##
+* Implement example packet hardware transfer.
+* Implement example packet reciever and handler. 
 
 ## Other HDLC related repositories 
-See the list of [contributors](https://github.com/lokraszewski/ADS1115/contributors) who participated in this project.
+* [hdlcpp](https://github.com/bang-olufsen/hdlcpp) by [Bang & Olufsen](https://github.com/bang-olufsen) -  header only C++11 HDLC implemenation. 
+* [hdlcd](https://github.com/Strunzdesign/hdlcd) by [Strunzdesign](https://github.com/Strunzdesign) - The HDLC Daemon (HDLCd), desktop daemon implementaion 
