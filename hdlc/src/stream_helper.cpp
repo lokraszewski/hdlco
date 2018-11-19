@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 16-11-2018
+ * @Last Modified time: 19-11-2018
  */
 
 #include "hdlc/stream_helper.h"
@@ -62,7 +62,7 @@ std::ostream& operator<<(std::ostream& os, const Frame& f)
       os << fmt::format(", {} bytes : ", payload.size());
       for (const auto byte : payload)
       {
-        os << fmt::format("{:#x} ", byte);
+        os << fmt::format("{:x} ", byte);
       }
     }
   }

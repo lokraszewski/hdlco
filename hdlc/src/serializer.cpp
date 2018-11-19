@@ -169,7 +169,7 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   auto       address     = *it++;
   auto       control     = *it++;
-  const auto poll        = (control >> 5) & 0b1;
+  const auto poll        = (control >> 4) & 0b1;
   const auto type        = get_frame_type(control);
   const auto send_seq    = (control >> 1) & 0b111;
   const auto recieve_seq = (control >> 5) & 0b111;
