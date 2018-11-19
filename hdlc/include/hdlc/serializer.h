@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 16-11-2018
+ * @Last Modified time: 19-11-2018
  */
 
 #pragma once
@@ -17,8 +17,8 @@ namespace hdlc
 class FrameSerializer
 {
 public:
-  static const std::vector<uint8_t> serialize(const Frame &frame);
-  static std::vector<uint8_t>       escape(const std::vector<uint8_t> &frame);
+  static std::vector<uint8_t> serialize(const Frame &frame);
+  static std::vector<uint8_t> escape(const std::vector<uint8_t> &frame);
 
   static Frame                deserialize(const std::vector<uint8_t> &buffer);
   static std::vector<uint8_t> descape(const std::vector<uint8_t> &buffer);

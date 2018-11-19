@@ -30,7 +30,18 @@
 using namespace hdlc;
 static auto m_log = spdlog::stdout_color_mt("hdlc");
 
-int run(int argc, char **argv)
+namespace
+{
+};
+
+template <typename T>
+void print_bytes(T& bytes)
+{
+  for (auto c : bytes) std::cout << fmt::format("{:#x} ", c);
+  std::cout << std::endl;
+}
+
+int run(int argc, char** argv)
 {
 
   m_log->info("Running example.");
@@ -41,10 +52,11 @@ int run(int argc, char **argv)
     m_log->info("Created default frame : {}", f);
   }
 
-  // Info frame
+// Info frame
+#if 0
   {
     std::vector<uint8_t> payload = {0, 0x7E, 2, 0x7D, 4};
-    Frame                f(payload);
+    Frame f(payload);
     f.set_poll(true);
     f.set_recieve_sequence(1);
     f.set_send_sequence(2);
@@ -60,36 +72,54 @@ int run(int argc, char **argv)
     for (auto c : f_escaped) std::cout << fmt::format("{:#x} ", c);
     std::cout << std::endl;
   }
+#endif
+
+  {
+    std::vector<uint8_t> payload = {0, 1, 2, 3, 4};
+    Frame                fsrc(payload);
+    m_log->info("Created frame : {}", fsrc);
+    auto bytes_src_serial   = FrameSerializer::serialize(fsrc);
+    auto bytes_src_escaped  = FrameSerializer::escape(bytes_src_serial);
+    auto bytes_dest_escaped = FrameSerializer::descape(bytes_src_escaped);
+    print_bytes(bytes_src_serial);
+    print_bytes(bytes_src_escaped);
+    print_bytes(bytes_dest_escaped);
+    auto fdest = FrameSerializer::deserialize(bytes_dest_escaped);
+    // m_log->info("bytes_src_serial : {}", bytes_src_serial);
+
+    // auto bytes = FrameSerializer::escape(F);
+    m_log->info("decoded frame : {}", fdest);
+  }
 
   // Mega basic blocking connection.
   {
-    m_log->info("Create connection");
-    auto connection = std::make_shared<ConnectionBlockingSimple>(
-        [](std::vector<uint8_t> &bytes) { return StatusError::ErrorFatal; },
-        [](std::vector<uint8_t> &bytes) {
-          std::cout << "WRITING: ";
-          for (auto c : bytes) std::cout << fmt::format("{:#x} ", c);
-          std::cout << std::endl;
-          return StatusError::ErrorFatal;
-        },
-        [](const auto sleep_ms) { std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms)); });
+    // m_log->info("Create connection");
+    // auto connection = std::make_shared<ConnectionBlockingSimple>(
+    //     [](std::vector<uint8_t> &bytes) { return StatusError::ErrorFatal; },
+    //     [](std::vector<uint8_t> &bytes) {
+    //       std::cout << "WRITING: ";
+    //       for (auto c : bytes) std::cout << fmt::format("{:#x} ", c);
+    //       std::cout << std::endl;
+    //       return StatusError::ErrorFatal;
+    //     },
+    //     [](const auto sleep_ms) { std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms)); });
 
-    std::string          test_payload = "TESTING";
-    std::vector<uint8_t> test_raw(test_payload.begin(), test_payload.end());
-    m_log->info("Sending: |{}|", test_payload);
-    connection->write(test_raw);
+    // std::string          test_payload = "TESTING";
+    // std::vector<uint8_t> test_raw(test_payload.begin(), test_payload.end());
+    // m_log->info("Sending: |{}|", test_payload);
+    // connection->write(test_raw);
   }
 
   return 0;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   try
   {
     return run(argc, argv);
   }
-  catch (std::exception &e)
+  catch (std::exception& e)
   {
     m_log->error("Unhandled Exception: {}", e.what());
   }

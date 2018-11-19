@@ -2,14 +2,14 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 16-11-2018
+ * @Last Modified time: 19-11-2018
  */
 
 #include "hdlc/serializer.h"
 
 #include <algorithm>
 #include <assert.h>
-
+#include <iostream>
 namespace hdlc
 {
 
@@ -57,7 +57,7 @@ auto FrameSerializer::get_frame_type(const uint8_t control)
   }
 }
 
-const std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
+std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
 {
   std::vector<uint8_t> frame_serialized;
   uint8_t              control_byte = static_cast<uint8_t>(frame.get_type());
@@ -139,25 +139,37 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 {
 
   if (buffer.size() < FRAME_MIN_SIZE)
+  {
+    std::cout << "FRAME TOO SMALL" << std::endl;
     return Frame(Frame::Type::UNSET);
+  }
 
   auto it  = buffer.begin();
   auto end = buffer.end();
 
   if (!is_checksum_valid(it, end))
+  {
+    std::cout << "CHECKSUM ERROR" << std::endl;
     return Frame(Frame::Type::UNSET);
+  }
 
   if (*it++ != protocol_bytes::frame_boundary)
+  {
+    std::cout << "INVALID START" << std::endl;
     return Frame(Frame::Type::UNSET);
+  }
 
   if (*(--end) != protocol_bytes::frame_boundary)
+  {
+    std::cout << "INVALID END" << std::endl;
     return Frame(Frame::Type::UNSET);
+  }
 
-  std::advance(end, -3); // Consume FCS and frame boundary.
+  std::advance(end, -2); // Consume FCS and frame boundary.
 
   auto       address     = *it++;
   auto       control     = *it++;
-  auto       poll        = (control >> 5) & 0b1;
+  const auto poll        = (control >> 5) & 0b1;
   const auto type        = get_frame_type(control);
   const auto send_seq    = (control >> 1) & 0b111;
   const auto recieve_seq = (control >> 5) & 0b111;
@@ -165,27 +177,27 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
   switch (type)
   {
   case Frame::Type::INFORMATION: return Frame(it, end, type, poll, address, recieve_seq, send_seq);
+  case Frame::Type::REJECT:
   case Frame::Type::RECEIVE_READY:
   case Frame::Type::RECEIVE_NOT_READY:
-  case Frame::Type::REJECT:
   case Frame::Type::SELECTIVE_REJECT: return Frame(it, end, type, poll, address, recieve_seq);
   case Frame::Type::UNNUMBERED_INFORMATION: return Frame(it, end, type, poll, address);
   case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
   case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
   case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE:
+  case Frame::Type::EXCHANGE_IDENTIFICATION:
+  case Frame::Type::SET_NORMAL_RESPONSE_MODE:
+  case Frame::Type::UNNUMBERED_POLL:
   case Frame::Type::INITIALIZATION:
   case Frame::Type::DISCONNECT:
-  case Frame::Type::UNNUMBERED_POLL:
   case Frame::Type::RESET:
-  case Frame::Type::EXCHANGE_IDENTIFICATION:
   case Frame::Type::FRAME_REJECT:
   case Frame::Type::NONRESERVED0:
   case Frame::Type::NONRESERVED2:
-  case Frame::Type::SET_NORMAL_RESPONSE_MODE:
   case Frame::Type::NONRESERVED1:
   case Frame::Type::NONRESERVED3:
   case Frame::Type::TEST: return Frame(type, poll, address);
-  default: return Frame(Frame::Type::UNSET);
+  default: std::cout << "UNKNOWN TYPE" << std::endl; return Frame(Frame::Type::UNSET);
   }
 }
 
@@ -227,7 +239,8 @@ auto FrameSerializer::checksum(std::vector<uint8_t> &frame) { return checksum(fr
 
 void FrameSerializer::append_checksum(std::vector<uint8_t> &buffer)
 {
-  const auto crc = checksum(buffer);
+  // Skip over the first byte since we assume it is a frame boundary.
+  const auto crc = checksum(buffer.begin() + 1, buffer.end());
   buffer.emplace_back(crc & 0xFF);
   buffer.emplace_back(crc >> 8);
 }
@@ -238,7 +251,9 @@ bool FrameSerializer::is_checksum_valid(iterator_t begin, iterator_t end)
   if ((end - begin) < FRAME_MIN_SIZE)
     return false;
 
-  auto expected_checksum = checksum(begin + 1, end - 3);
+  auto expected_begin    = begin + 1;
+  auto expected_end      = end - 3;
+  auto expected_checksum = checksum(expected_begin, expected_end);
   auto actual_checksum   = *(end - 3) | (*(end - 2) << 8);
   return expected_checksum == actual_checksum;
 }
