@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <assert.h>
-
+#include <iostream>
 namespace hdlc
 {
 
@@ -108,7 +108,7 @@ std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
   append_checksum(frame_serialized);
   frame_serialized.emplace_back(protocol_bytes::frame_boundary);
 
-  return (frame_serialized);
+  return frame_serialized;
 }
 std::vector<uint8_t> FrameSerializer::escape(const std::vector<uint8_t> &frame)
 {
@@ -132,7 +132,7 @@ std::vector<uint8_t> FrameSerializer::escape(const std::vector<uint8_t> &frame)
   });
 
   escaped.emplace_back(protocol_bytes::frame_boundary);
-  return (escaped);
+  return escaped;
 }
 
 Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
@@ -140,6 +140,7 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   if (buffer.size() < FRAME_MIN_SIZE)
   {
+    std::cout << "FRAME TOO SMALL" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
@@ -148,16 +149,19 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   if (!is_checksum_valid(it, end))
   {
+    std::cout << "CHECKSUM ERROR" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
   if (*it++ != protocol_bytes::frame_boundary)
   {
+    std::cout << "INVALID START" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
   if (*(--end) != protocol_bytes::frame_boundary)
   {
+    std::cout << "INVALID END" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
@@ -193,7 +197,7 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
   case Frame::Type::NONRESERVED1:
   case Frame::Type::NONRESERVED3:
   case Frame::Type::TEST: return Frame(type, poll, address);
-  default: return Frame(Frame::Type::UNSET);
+  default: std::cout << "UNKNOWN TYPE" << std::endl; return Frame(Frame::Type::UNSET);
   }
 }
 
@@ -220,7 +224,7 @@ std::vector<uint8_t> FrameSerializer::descape(const std::vector<uint8_t> &buffer
     }
   });
 
-  return (descaped);
+  return descaped;
 }
 
 template <typename iterator_t>

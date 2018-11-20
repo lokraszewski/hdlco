@@ -7,19 +7,11 @@
 
 #pragma once
 
-<<<<<<< HEAD
 #include "frame.h"
 #include "types.h"
 
 #include <algorithm>
 #include <iostream>
-=======
-#include "options.h"
-#if HDLC_USE_RANDOM
-#include "frame.h"
-#include "types.h"
-#include <algorithm>
->>>>>>> feature/options
 #include <random>
 
 namespace hdlc
@@ -119,7 +111,3 @@ public:
   static std::default_random_engine m_generator;
 };
 } // namespace hdlc
-<<<<<<< HEAD
-=======
-#endif
->>>>>>> feature/options
