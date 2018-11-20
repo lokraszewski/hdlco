@@ -11,7 +11,6 @@
 #include "types.h"
 
 #include <algorithm>
-#include <iostream>
 #include <random>
 
 namespace hdlc

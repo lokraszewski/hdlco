@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <assert.h>
-#include <iostream>
+
 namespace hdlc
 {
 
@@ -52,7 +52,7 @@ auto FrameSerializer::get_frame_type(const uint8_t control)
     case Frame::Type::NONRESERVED3:
     case Frame::Type::TEST:
     case Frame::Type::UNSET: return type;
-    default: std::cout << std::hex << "TYPE: 0x" << (int)type << std::endl; return Frame::Type::UNSET;
+    default: return Frame::Type::UNSET;
     }
   }
 }
@@ -140,7 +140,6 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   if (buffer.size() < FRAME_MIN_SIZE)
   {
-    std::cout << "FRAME TOO SMALL" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
@@ -149,19 +148,16 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   if (!is_checksum_valid(it, end))
   {
-    std::cout << "CHECKSUM ERROR" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
   if (*it++ != protocol_bytes::frame_boundary)
   {
-    std::cout << "INVALID START" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
   if (*(--end) != protocol_bytes::frame_boundary)
   {
-    std::cout << "INVALID END" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
@@ -197,7 +193,7 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
   case Frame::Type::NONRESERVED1:
   case Frame::Type::NONRESERVED3:
   case Frame::Type::TEST: return Frame(type, poll, address);
-  default: std::cout << "UNKNOWN TYPE" << std::endl; return Frame(Frame::Type::UNSET);
+  default: return Frame(Frame::Type::UNSET);
   }
 }
 

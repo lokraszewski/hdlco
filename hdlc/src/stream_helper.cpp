@@ -2,10 +2,13 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 19-11-2018
+ * @Last Modified time: 20-11-2018
  */
 
 #include "hdlc/stream_helper.h"
+
+#ifdef __unix__
+
 #include <assert.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -70,3 +73,5 @@ std::ostream& operator<<(std::ostream& os, const Frame& f)
   return os;
 }
 } // namespace hdlc
+
+#endif
