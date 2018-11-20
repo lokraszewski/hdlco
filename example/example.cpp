@@ -132,22 +132,66 @@ int run_listener(std::shared_ptr<serial::Serial> port)
   return 0;
 }
 
-int run_normal_master(std::shared_ptr<serial::Serial> port)
+template <typename impl_t>
+class io
 {
-#if 0
-  hdlc::io io_serial(port);
+public:
+  io(std::shared_ptr<impl_t> ptr) : m_ptr(ptr) {}
+  ~io() {}
 
-  m_log->info("Creating session to slave at address {:#x}", 0xFF);
+  bool send_frame(const Frame& f) { return false; }
+  bool recieve_frame(Frame& f) { return false; }
 
-  hdlc::SessionMaster session_master(io_serial, 1, 2);
-  hdlc::SessionSlave session_slave(io_serial, 2, 1);
+private:
+  std::shared_ptr<impl_t> m_ptr;
+};
 
-  session_master.is_connected()
-  session_master.run(); //Normally on its own thread.
-  session_master.connect()
-  session_slave.is_connected()
+template <typename io_t>
+class SessionMaster
+{
+public:
+  SessionMaster(io_t& io, const uint8_t p_address = 0xFF, const uint8_t s_address = 0xFF)
+      : m_io(io), m_p_address(p_address), m_s_address(s_address)
+  {
+  }
+  ~SessionMaster() {}
 
-#endif
+  bool test()
+  {
+    std::vector<uint8_t> test_data = {0xAA, 0xBB, 0xCC, 0xDD};
+    Frame                f(test_data, Frame::Type::TEST, true, m_s_address); // U frame with test  data.
+
+    // Blocking call
+    if (m_io.send_frame(f) == false)
+    {
+      std::cout << "FAILED TO SEND\n";
+      return false;
+    }
+
+    // Blocking call with timeout.
+    if (m_io.recieve_frame(f) == false)
+    {
+      std::cout << "FAILED TO RECIEVE\n";
+      return false;
+    }
+
+    return false;
+  }
+
+private:
+  io_t&   m_io;
+  uint8_t m_p_address;
+  uint8_t m_s_address;
+  uint8_t m_recieve_seq = 0;
+  uint8_t m_send_seq    = 0;
+};
+
+int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
+{
+  m_log->info("Creating session, this address: {:#x}, target address {:#x}", this_address, target_address);
+  io<serial::Serial>                io_serial(port);
+  SessionMaster<io<serial::Serial>> session_master(io_serial, this_address, target_address);
+
   using namespace std::chrono_literals;
 
   std::string command = "";
@@ -156,8 +200,7 @@ int run_normal_master(std::shared_ptr<serial::Serial> port)
   std::thread t_rx([&]() {
     for (;;)
     {
-      std::this_thread::sleep_for(1s);
-      std::cout << "RX\n";
+      std::this_thread::sleep_for(1ms);
       std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
       if (l_end_of_program == true)
         break;
@@ -170,8 +213,7 @@ int run_normal_master(std::shared_ptr<serial::Serial> port)
   std::thread t_tx([&]() {
     for (;;)
     {
-      std::this_thread::sleep_for(1s);
-      std::cout << "TX\n";
+      std::this_thread::sleep_for(1ms);
       std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
       if (l_end_of_program == true)
         break;
@@ -182,12 +224,30 @@ int run_normal_master(std::shared_ptr<serial::Serial> port)
 
   for (;;)
   {
+    m_log->info("Enter command, type 'quit' to exit.");
     std::cin >> command;
     if (command == "quit")
     {
       std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
       l_end_of_program = true;
       break;
+    }
+    else if (command == "test")
+    {
+      m_log->info("Testing link...");
+      auto success = session_master.test();
+      if (success)
+      {
+        m_log->info("Link is up.");
+      }
+      else
+      {
+        m_log->error("Link is down.");
+      }
+    }
+    else
+    {
+      m_log->error("Unknown command.");
     }
   }
 
@@ -224,7 +284,12 @@ int run(int argc, char** argv)
   {
   case 1: return run_sender(port);
   case 2: return run_listener(port);
-  case 3: return run_normal_master(port);
+  case 3:
+  {
+    const auto this_address   = (argc >= 4) ? std::stoi(argv[3]) : 1;
+    const auto target_address = (argc >= 5) ? std::stoi(argv[4]) : 2;
+    return run_normal_master(port, this_address, target_address);
+  }
   default: return run_loopback(port, 10);
   }
 }
