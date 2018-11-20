@@ -9,6 +9,10 @@
 
 #include "types.h"
 #include <boost/circular_buffer.hpp>
+<<<<<<< HEAD
+=======
+#include <vector>
+>>>>>>> feature/options
 
 namespace hdlc
 {
@@ -24,6 +28,7 @@ public:
   auto begin(void) const { return m_buffer.begin(); }
   auto end(void) const { return m_buffer.end(); }
 
+<<<<<<< HEAD
   auto recieve(const uint8_t byte)
   {
 
@@ -68,12 +73,51 @@ public:
     }
 
     return success;
+=======
+  void recieve(const uint8_t byte)
+  {
+    if (full() == false)
+    {
+      if (m_frame_incoming == false)
+      {
+        if (byte != protocol_bytes::frame_boundary)
+        {
+          return;
+        }
+        else
+        {
+          /* start timeout. */
+          m_frame_incoming = true;
+        }
+      }
+      else
+      {
+        if (byte == protocol_bytes::frame_boundary)
+        {
+          m_frame_incoming = false;
+          m_frames_in++;
+        }
+      }
+
+      m_buffer.push_back(byte);
+    }
+  }
+
+  void recieve(const std::vector<uint8_t> buffer)
+  {
+
+    for (const auto c : buffer)
+    {
+      recieve(c);
+    }
+>>>>>>> feature/options
   }
 
   auto pop_frame(void)
   {
     std::vector<uint8_t> frame;
 
+<<<<<<< HEAD
     if (m_frames_in == 0)
       return frame;
 
@@ -95,6 +139,30 @@ public:
     return frame;
   }
 
+=======
+    if (m_frames_in > 0)
+    {
+      auto begin = m_buffer.begin();
+      auto end   = m_buffer.end();
+      auto sof   = std::find(begin, end, protocol_bytes::frame_boundary);
+      auto eof   = std::find(sof + 1, end, protocol_bytes::frame_boundary);
+
+      // Post increment eof since we need the end iterator to point one past the
+      // last element for std algorithms.
+      if (sof != end && eof++ != end)
+      {
+        frame.reserve(eof - sof);
+        std::copy(sof, eof, std::back_inserter(frame));
+        m_buffer.erase(sof, eof);
+        --m_frames_in;
+      }
+    }
+
+    return (frame);
+  }
+
+  auto busy(void) const noexcept { return m_frame_incoming; }
+>>>>>>> feature/options
   void reset(void)
   {
     m_buffer.clear();
