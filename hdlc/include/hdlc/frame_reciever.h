@@ -85,7 +85,7 @@ public:
       }
     }
 
-    return std::move(frame);
+    return (frame);
   }
 
   auto busy(void) const noexcept { return m_frame_incoming; }

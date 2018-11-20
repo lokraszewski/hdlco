@@ -108,7 +108,7 @@ std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
   append_checksum(frame_serialized);
   frame_serialized.emplace_back(protocol_bytes::frame_boundary);
 
-  return std::move(frame_serialized);
+  return (frame_serialized);
 }
 std::vector<uint8_t> FrameSerializer::escape(const std::vector<uint8_t> &frame)
 {
@@ -132,7 +132,7 @@ std::vector<uint8_t> FrameSerializer::escape(const std::vector<uint8_t> &frame)
   });
 
   escaped.emplace_back(protocol_bytes::frame_boundary);
-  return std::move(escaped);
+  return (escaped);
 }
 
 Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
@@ -220,7 +220,7 @@ std::vector<uint8_t> FrameSerializer::descape(const std::vector<uint8_t> &buffer
     }
   });
 
-  return std::move(descaped);
+  return (descaped);
 }
 
 template <typename iterator_t>
