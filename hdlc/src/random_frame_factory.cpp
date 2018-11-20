@@ -5,8 +5,9 @@
  * @Last Modified time: 20-11-2018
  */
 #include "hdlc/random_frame_factory.h"
-
+#if HDLC_USE_RANDOM
 namespace hdlc
 {
 std::default_random_engine RandomFrameFactory::m_generator;
 }
+#endif

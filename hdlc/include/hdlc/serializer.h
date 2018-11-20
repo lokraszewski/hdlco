@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 19-11-2018
+ * @Last Modified time: 20-11-2018
  */
 
 #pragma once
@@ -22,6 +22,9 @@ public:
 
   static Frame                deserialize(const std::vector<uint8_t> &buffer);
   static std::vector<uint8_t> descape(const std::vector<uint8_t> &buffer);
+
+  static std::vector<uint8_t> encode(const Frame &frame);
+  static Frame decode(const std::vector<uint8_t> &buffer);
 
   template <typename iterator_t>
   static auto checksum(iterator_t begin, iterator_t end);
