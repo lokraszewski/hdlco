@@ -2,7 +2,7 @@
  * @Author: lokraszewski
  * @Date:   15-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 19-11-2018
+ * @Last Modified time: 20-11-2018
  */
 
 #pragma once
@@ -76,10 +76,12 @@ public:
   bool is_unnumbered() const noexcept { return !is_empty() && (static_cast<uint8_t>(m_type) & 0b11) == 0b11; }
   void set_poll(bool poll) noexcept { m_poll_flag = poll; }
   auto is_poll() const noexcept { return m_poll_flag; }
+
   void set_recieve_sequence(const uint8_t sequence) noexcept { m_recieve_seq = sequence & 0b111; }
   void set_send_sequence(const uint8_t sequence) noexcept { m_send_seq = sequence & 0b111; }
-  auto get_recieve_sequence() const noexcept { return m_recieve_seq; }
-  auto get_send_sequence() const noexcept { return m_send_seq; }
+
+  auto get_recieve_sequence() const noexcept { return (is_unnumbered()) ? 0 : m_recieve_seq; }
+  auto get_send_sequence() const noexcept { return is_information() ? m_send_seq : 0; }
 
   auto                        begin() const { return m_payload.begin(); }
   auto                        end() const { return m_payload.end(); }
@@ -96,17 +98,17 @@ public:
 
   bool operator==(const Frame& other) const
   {
-    if (m_type != other.get_type())
+    if (get_type() != other.get_type())
       return false;
-    if (m_address != other.get_address())
+    if (get_address() != other.get_address())
       return false;
     if (m_poll_flag != other.is_poll())
       return false;
-    if (m_recieve_seq != other.get_recieve_sequence())
+    if (get_recieve_sequence() != other.get_recieve_sequence())
       return false;
-    if (m_send_seq != other.get_send_sequence())
+    if (get_send_sequence() != other.get_send_sequence())
       return false;
-    if (m_payload.size() != other.payload_size())
+    if (payload_size() != other.payload_size())
       return false;
 
     return std::equal(m_payload.begin(), m_payload.end(), other.begin());

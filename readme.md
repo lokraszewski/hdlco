@@ -117,6 +117,9 @@ cmake .. && make
 * Implement example packet hardware transfer.
 * Implement example packet reciever and handler. 
 
+## References
+* [Data Communication Lectures of Manfred Lindner – Part HDLC](https://www.ict.tuwien.ac.at/lva/384.081/infobase/L03-HDLC_v4-4.pdf)
+
 ## Other HDLC related repositories 
 * [hdlcpp](https://github.com/bang-olufsen/hdlcpp) by [Bang & Olufsen](https://github.com/bang-olufsen) -  header only C++11 HDLC implemenation. 
 * [hdlcd](https://github.com/Strunzdesign/hdlcd) by [Strunzdesign](https://github.com/Strunzdesign) - The HDLC Daemon (HDLCd), desktop daemon implementaion 
