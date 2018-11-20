@@ -31,7 +31,6 @@ static auto m_log = spdlog::stdout_color_mt("hdlc");
 
 std::random_device m_rd;          // Will be used to obtain a seed for the random number engine
 std::mt19937       m_gen(m_rd()); // Standard mersenne_twister_engine seeded with rd()
-// std::uniform_int_distribution<> m_dis(1, 6);
 
 namespace
 {
@@ -81,15 +80,13 @@ int run_loopback(std::shared_ptr<serial::Serial> port, const int number_of_runs)
       return -1;
     }
   }
-  /* Loop frame */
-  {
-    // const auto payload       = std::string("PAYLOAD");
-    // auto       bytes         = FrameSerializer::serialize(frame);
-    // auto       escaped_bytes = ;
-  }
 
   return 0;
 }
+
+int run_sender(std::shared_ptr<serial::Serial> port) { return 0; }
+
+int run_listener(std::shared_ptr<serial::Serial> port) { return 0; }
 
 int run(int argc, char** argv)
 {
@@ -112,22 +109,25 @@ int run(int argc, char** argv)
 
   const std::string run_mode = (argc >= 3) ? argv[2] : "loopback";
 
+  m_log->info("Running in {} mode", run_mode);
+
   if (run_mode == "loopback")
   {
     return run_loopback(port, 10);
+  }
+  else if (run_mode == "listen")
+  {
+    return run_listener(port);
+  }
+  else if (run_mode == "send")
+  {
+    return run_sender(port);
   }
   else
   {
     m_log->error("Unknown run mode");
     return -1;
   }
-
-  {
-  }
-
-  /* send port. */
-
-  /* TODO. */
 
   return 0;
 }
