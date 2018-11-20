@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 19-11-2018
+ * @Last Modified time: 20-11-2018
  */
 
 #include "hdlc/serializer.h"
@@ -27,7 +27,7 @@ auto FrameSerializer::get_frame_type(const uint8_t control)
   }
   else
   {
-    auto type = static_cast<Frame::Type>(control & ~(1 << 5));
+    auto type = static_cast<Frame::Type>(control & ~((uint8_t)header_bits::poll_flag));
     switch (type)
     {
     case Frame::Type::INFORMATION:
@@ -52,7 +52,7 @@ auto FrameSerializer::get_frame_type(const uint8_t control)
     case Frame::Type::NONRESERVED3:
     case Frame::Type::TEST:
     case Frame::Type::UNSET: return type;
-    default: return Frame::Type::UNSET;
+    default: std::cout << std::hex << "TYPE: 0x" << (int)type << std::endl; return Frame::Type::UNSET;
     }
   }
 }
@@ -93,7 +93,7 @@ std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
 
   if (frame.is_poll())
   {
-    control_byte |= (1 << 4);
+    control_byte |= (uint8_t)header_bits::poll_flag;
   }
 
   frame_serialized.emplace_back(protocol_bytes::frame_boundary);
@@ -125,7 +125,7 @@ std::vector<uint8_t> FrameSerializer::escape(const std::vector<uint8_t> &frame)
     case protocol_bytes::frame_boundary:
     case protocol_bytes::escape:
       escaped.emplace_back(protocol_bytes::escape);
-      escaped.emplace_back(byte ^ 0x20);
+      escaped.emplace_back(byte ^ (uint8_t)header_bits::stuffing);
       break;
     default: escaped.emplace_back(byte); break;
     }
@@ -169,7 +169,7 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   auto       address     = *it++;
   auto       control     = *it++;
-  const auto poll        = (control >> 5) & 0b1;
+  const auto poll        = (control & (uint8_t)header_bits::poll_flag) ? true : false;
   const auto type        = get_frame_type(control);
   const auto send_seq    = (control >> 1) & 0b111;
   const auto recieve_seq = (control >> 5) & 0b111;
@@ -211,7 +211,7 @@ std::vector<uint8_t> FrameSerializer::descape(const std::vector<uint8_t> &buffer
     static bool escaped = false;
     if (escaped)
     {
-      descaped.emplace_back(byte ^ 0x20);
+      descaped.emplace_back(byte ^ (uint8_t)header_bits::stuffing);
       escaped = false;
     }
     else if (byte == protocol_bytes::escape)

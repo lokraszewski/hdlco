@@ -1,0 +1,3 @@
+[submodule "vendor/serial"]
+	path = vendor/serial
+	url = https://github.com/lokraszewski/serial.git

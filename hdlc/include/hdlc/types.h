@@ -8,6 +8,7 @@ namespace hdlc
 enum class header_bits : uint8_t
 {
   poll_flag = 0x10,
+  stuffing = 0x20,
 };
 
 enum protocol_bytes : uint8_t
