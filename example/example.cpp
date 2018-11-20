@@ -22,7 +22,9 @@
 #include <spdlog/spdlog.h>
 
 #include "hdlc/frame.h"
+#include "hdlc/frame_reciever.h"
 #include "hdlc/hdlc.h"
+#include "hdlc/random_frame_factory.h"
 #include "hdlc/serializer.h"
 #include "hdlc/stream_helper.h"
 
@@ -47,18 +49,10 @@ int run_loopback(std::shared_ptr<serial::Serial> port, const int number_of_runs)
 {
   port->flush(); // flush both input and output.
 
-  std::uniform_int_distribution<> l_byte(0, 255);
-  std::uniform_int_distribution<> l_runs(10, 100);
-
   m_log->info("Loopback test with {} packets. ", number_of_runs);
   for (auto run = 0; run < number_of_runs; ++run)
   {
-    auto packet_len = l_byte(m_gen);
-    m_log->info("Packet {} with {} bytes payload. ", run, packet_len);
-    std::vector<uint8_t> payload(packet_len);
-    for (auto& c : payload) c = l_byte(m_gen);
-    Frame frame(payload, Frame::Type::INFORMATION, true, 0xAA, run, run + 1);
-
+    auto frame = RandomFrameFactory::make_inforamtion(128);
     m_log->info("Sending frame: {}", frame);
     const auto raw_bytes_tx = FrameSerializer::escape(FrameSerializer::serialize(frame));
     port->write(raw_bytes_tx);
@@ -84,9 +78,59 @@ int run_loopback(std::shared_ptr<serial::Serial> port, const int number_of_runs)
   return 0;
 }
 
-int run_sender(std::shared_ptr<serial::Serial> port) { return 0; }
+int run_sender(std::shared_ptr<serial::Serial> port)
+{
 
-int run_listener(std::shared_ptr<serial::Serial> port) { return 0; }
+  port->flush(); // flush both input and output.
+
+  std::string payload     = "";
+  uint8_t     recieve_seq = 0;
+  uint8_t     send_seq    = 0;
+  while (payload != "quit")
+  {
+    m_log->info("Please enter command ('quit' to stop)");
+    std::cin >> payload;
+
+    Frame frame_tx(payload.begin(), payload.end(), Frame::Type::INFORMATION, true, 0xFF, recieve_seq, send_seq);
+
+    m_log->info("Sending : {}", frame_tx);
+    port->write(FrameSerializer::escape(FrameSerializer::serialize(frame_tx)));
+  }
+
+  return 0;
+}
+
+int run_listener(std::shared_ptr<serial::Serial> port)
+{
+
+  port->flush(); // flush both input and output.
+  FrameCharReciever rx(512);
+  uint8_t           byte;
+
+  for (;;)
+  {
+    while (!rx.full() && port->read(&byte, 1))
+    {
+      rx.recieve(byte);
+    }
+
+    if (rx.frames_in())
+    {
+      auto frame_rx = FrameSerializer::deserialize(FrameSerializer::descape(rx.pop_frame()));
+      m_log->info("Recieved : {}", frame_rx);
+
+      if (frame_rx.has_payload())
+      {
+        std::string payload(frame_rx.begin(), frame_rx.end());
+        m_log->info("Payload: {}", payload);
+        if ("quit" == payload)
+          return 0;
+      }
+    }
+  }
+
+  return 0;
+}
 
 int run(int argc, char** argv)
 {

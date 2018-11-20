@@ -40,6 +40,7 @@ public:
       }
       else
       {
+        /* start timeout. */
         m_frame_incoming = true;
       }
     }
@@ -101,8 +102,8 @@ public:
   }
 
 private:
-  bool                            m_frame_incoming;
-  size_t                          m_frames_in;
+  bool                            m_frame_incoming = false;
+  size_t                          m_frames_in      = 0;
   boost::circular_buffer<uint8_t> m_buffer;
 };
 } // namespace hdlc
