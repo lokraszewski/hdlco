@@ -31,8 +31,8 @@
 using namespace hdlc;
 static auto m_log = spdlog::stdout_color_mt("hdlc");
 
-std::random_device m_rd;          // Will be used to obtain a seed for the random number engine
-std::mt19937       m_gen(m_rd()); // Standard mersenne_twister_engine seeded with rd()
+std::mutex l_end_of_program_mutex;
+bool       l_end_of_program = false;
 
 namespace
 {
@@ -132,6 +132,71 @@ int run_listener(std::shared_ptr<serial::Serial> port)
   return 0;
 }
 
+int run_normal_master(std::shared_ptr<serial::Serial> port)
+{
+#if 0
+  hdlc::io io_serial(port);
+
+  m_log->info("Creating session to slave at address {:#x}", 0xFF);
+
+  hdlc::SessionMaster session_master(io_serial, 1, 2);
+  hdlc::SessionSlave session_slave(io_serial, 2, 1);
+
+  session_master.is_connected()
+  session_master.run(); //Normally on its own thread.
+  session_master.connect()
+  session_slave.is_connected()
+
+#endif
+  using namespace std::chrono_literals;
+
+  std::string command = "";
+
+  // Create a reciever thread. Monitors the serial port and adds characters to the incoming buffer.
+  std::thread t_rx([&]() {
+    for (;;)
+    {
+      std::this_thread::sleep_for(1s);
+      std::cout << "RX\n";
+      std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
+      if (l_end_of_program == true)
+        break;
+    }
+  }
+
+  );
+
+  // Create the sender thread. sends any outstanding bytes.
+  std::thread t_tx([&]() {
+    for (;;)
+    {
+      std::this_thread::sleep_for(1s);
+      std::cout << "TX\n";
+      std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
+      if (l_end_of_program == true)
+        break;
+    }
+  }
+
+  );
+
+  for (;;)
+  {
+    std::cin >> command;
+    if (command == "quit")
+    {
+      std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
+      l_end_of_program = true;
+      break;
+    }
+  }
+
+  t_rx.join();
+  t_tx.join();
+
+  return 0;
+}
+
 int run(int argc, char** argv)
 {
 
@@ -151,29 +216,17 @@ int run(int argc, char** argv)
     return -2;
   }
 
-  const std::string run_mode = (argc >= 3) ? argv[2] : "loopback";
+  const auto run_mode = (argc >= 3) ? std::stoi(argv[2]) : 0;
 
   m_log->info("Running in {} mode", run_mode);
 
-  if (run_mode == "loopback")
+  switch (run_mode)
   {
-    return run_loopback(port, 10);
+  case 1: return run_sender(port);
+  case 2: return run_listener(port);
+  case 3: return run_normal_master(port);
+  default: return run_loopback(port, 10);
   }
-  else if (run_mode == "listen")
-  {
-    return run_listener(port);
-  }
-  else if (run_mode == "send")
-  {
-    return run_sender(port);
-  }
-  else
-  {
-    m_log->error("Unknown run mode");
-    return -1;
-  }
-
-  return 0;
 }
 
 int main(int argc, char** argv)

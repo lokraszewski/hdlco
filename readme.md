@@ -94,6 +94,7 @@ The "abort sequence" 0x7D 0x7E ends a packet with an incomplete byte-stuff seque
 ## Design Notes
 * Currently the library only provides the means to create and serilize HDLC frames, there is no transfer implementaion or session management. This is difficult to implement since I would like for this library to be usable on both desktop and embedded platforms hence for the time being it is up to the user to implement transfer of serialized frames. 
 * The underlaying storage type is vector which requires heap allocation, on embedded platforms I have tested this with FreeRTOS allocator with little issues but it may be easier to operate on buffers that have been pre-allocated. 
+* The sessions are blocking the thread they are ran on. This is so that the user can implement their own threading based on the OS (bare metal, linux).
 
 
 ## Prerequisites
