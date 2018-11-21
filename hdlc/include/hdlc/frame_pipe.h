@@ -64,7 +64,60 @@ public:
   auto partial_frame(void) const
   {
     std::lock_guard<std::mutex> _l(m_mutex);
-    return m_boundary_count & 1 ? true : false;
+    return m_boundary_count && m_boundary_count & 1 ? true : false;
+  }
+
+  uint8_t read(void)
+  {
+    if (empty())
+      return 0;
+
+    std::lock_guard<std::mutex> _l(m_mutex);
+    const auto                  byte = m_buffer.front();
+    if (byte == protocol_bytes::frame_boundary)
+      --m_boundary_count;
+    m_buffer.pop_front();
+
+    return byte;
+  }
+
+  size_t read(std::vector<uint8_t>& buffer)
+  {
+    if (empty())
+      return 0;
+
+    buffer.reserve(size());
+    std::lock_guard<std::mutex> _l(m_mutex);
+    std::copy(m_buffer.begin(), m_buffer.end(), std::back_inserter(buffer));
+    m_buffer.clear();
+    m_boundary_count = 0;
+    return buffer.size();
+  }
+
+  std::vector<uint8_t> read_frame()
+  {
+    std::vector<uint8_t> buffer;
+
+    if (frame_count() == 0)
+      return buffer;
+
+    std::lock_guard<std::mutex> _l(m_mutex);
+
+    auto begin = m_buffer.begin();
+    auto end   = m_buffer.end();
+    auto sof   = std::find(begin, end, protocol_bytes::frame_boundary);   // Find start of frame
+    auto eof   = std::find(sof + 1, end, protocol_bytes::frame_boundary); // Find end of frame
+
+    // Check if the boundaries are valid.
+    if (sof != end && eof++ != end)
+    {
+      buffer.reserve(eof - sof);
+      std::copy(sof, eof, std::back_inserter(buffer));
+      m_buffer.erase(sof, eof);
+      m_boundary_count -= 2; // We know we have found 2 boundaries because sof and eof were not end
+    }
+
+    return buffer;
   }
 
   void write(const uint8_t byte)
@@ -88,8 +141,7 @@ public:
     m_buffer.insert(m_buffer.end(), begin, end);
   }
 
-  template <typename buffer_t>
-  void write(const buffer_t& buffer)
+  void write(const std::vector<uint8_t>& buffer)
   {
     if (buffer.size() > space())
       return;

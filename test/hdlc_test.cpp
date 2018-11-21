@@ -123,10 +123,26 @@ TEST_CASE("Frame Pipe Test")
     REQUIRE(pipe1.empty() == true);
     REQUIRE(pipe1.size() == 0);
     REQUIRE(pipe1.space() == 1024);
-    REQUIRE(pipe1.begin() == pipe1.end());
   }
 
-  SECTION("Byte writes.")
+  SECTION("Simple byte operations.")
+  {
+    pipe1.write(1);
+    pipe1.write(2);
+    pipe1.write(3);
+    pipe1.write(4);
+
+    REQUIRE(pipe1.size() == 4);
+    REQUIRE(pipe1.empty() == false);
+    REQUIRE(pipe1.frame_count() == 0);
+    REQUIRE(pipe1.partial_frame() == false);
+    REQUIRE(pipe1.read() == 1);
+    REQUIRE(pipe1.read() == 2);
+    REQUIRE(pipe1.read() == 3);
+    REQUIRE(pipe1.read() == 4);
+  }
+
+  SECTION("Byte operations.")
   {
     REQUIRE(pipe1.full() == false);
     for (auto c : test_data1) pipe1.write(c);
@@ -134,6 +150,7 @@ TEST_CASE("Frame Pipe Test")
     REQUIRE(pipe1.empty() == false);
     REQUIRE(pipe1.frame_count() == 1);
     REQUIRE(pipe1.partial_frame() == false);
+    for (const auto c : test_data1) REQUIRE(pipe1.read() == c);
   }
 
   SECTION("Iterator writes.")
@@ -146,7 +163,7 @@ TEST_CASE("Frame Pipe Test")
     REQUIRE(pipe1.partial_frame() == false);
   }
 
-  SECTION("Array writes.")
+  SECTION("Array writes - Read all")
   {
     REQUIRE(pipe1.full() == false);
     pipe1.write(test_data1);
@@ -154,7 +171,39 @@ TEST_CASE("Frame Pipe Test")
     REQUIRE(pipe1.empty() == false);
     REQUIRE(pipe1.frame_count() == 1);
     REQUIRE(pipe1.partial_frame() == false);
+
+    std::vector<uint8_t> data_out;
+    REQUIRE(pipe1.read(data_out) == test_data1.size());
+    REQUIRE(data_out == test_data1);
+    REQUIRE(pipe1.empty() == true);
+    REQUIRE(pipe1.frame_count() == 0);
   }
+
+  SECTION("Array writes - read single frame.")
+  {
+    pipe1.write(test_data1);
+    const auto data_out = pipe1.read_frame();
+    REQUIRE(data_out.size() == test_data1.size());
+    REQUIRE(data_out == test_data1);
+    REQUIRE(pipe1.empty() == true);
+    REQUIRE(pipe1.frame_count() == 0);
+  }
+
+  SECTION("Array writes - multiple frames.")
+  {
+    const auto NUMBER_OF_FRAMES = 5;
+    for (auto i = NUMBER_OF_FRAMES; i--;) pipe1.write(test_data1);
+    REQUIRE(pipe1.frame_count() == NUMBER_OF_FRAMES);
+
+    for (auto i = NUMBER_OF_FRAMES; i--;)
+    {
+      const auto data_out = pipe1.read_frame();
+      REQUIRE(data_out.size() == test_data1.size());
+      REQUIRE(data_out == test_data1);
+      REQUIRE(pipe1.frame_count() == i);
+    }
+  }
+
   // SECTION("Single frames can be recieved.")
   // {
   //   auto frame         = RandomFrameFactory::make_inforamtion(128);
