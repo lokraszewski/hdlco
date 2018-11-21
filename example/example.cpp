@@ -25,6 +25,7 @@
 #include "hdlc/frame.h"
 #include "hdlc/frame_reciever.h"
 #include "hdlc/hdlc.h"
+#include "hdlc/io.h"
 #include "hdlc/random_frame_factory.h"
 #include "hdlc/serializer.h"
 #include "hdlc/stream_helper.h"
@@ -183,6 +184,46 @@ private:
 };
 #endif
 
+class example_io : public base_io
+{
+
+public:
+  example_io(std::shared_ptr<serial::Serial> ptr) : base_io(), m_ptr(ptr) {}
+  ~example_io() {}
+
+  size_t get_tick(void) const override
+  {
+    auto now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    return static_cast<size_t>(now);
+  }
+  bool handle_out(void) override
+  {
+    bool success = true;
+    while (m_out_pipe.empty() == false && success)
+    {
+      auto byte = m_out_pipe.read();
+      success   = (bool)m_ptr->write(&byte, 1);
+    }
+    return success;
+  }
+  bool handle_in(void) override
+  {
+    const auto readable = m_ptr->waitReadable();
+    if (readable)
+    {
+      uint8_t byte;
+      while (m_in_pipe.full() == false && m_ptr->read(&byte, 1))
+      {
+        m_in_pipe.write(byte);
+      }
+    }
+    return readable;
+  }
+
+private:
+  std::shared_ptr<serial::Serial> m_ptr;
+};
+
 int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
 {
 
@@ -190,6 +231,9 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
   m_log->info("Creating session, this address: {:#x}, target address {:#x}", this_address, target_address);
   io<serial::Serial>                io_serial(port, 512);
   SessionMaster<io<serial::Serial>> session_master(io_serial, this_address, target_address);
+#endif
+
+  example_io io(port);
 
   using namespace std::chrono_literals;
 
@@ -199,7 +243,7 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
   std::thread t_rx([&]() {
     for (;;)
     {
-      io_serial.handle_in();
+      io.handle_in();
       std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
       if (l_end_of_program == true)
         break;
@@ -210,7 +254,7 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
   std::thread t_tx([&]() {
     for (;;)
     {
-      io_serial.handle_out();
+      io.handle_out();
       std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
       if (l_end_of_program == true)
         break;
@@ -232,15 +276,20 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
     else if (command == "test")
     {
       m_log->info("Testing link...");
-      auto success = session_master.test();
-      if (success)
-      {
-        m_log->info("Link is up.");
-      }
-      else
-      {
-        m_log->error("Link is down.");
-      }
+
+      auto f = RandomFrameFactory::make();
+      io.send_frame(f);
+      // Frame frame_tx(payload.begin(), payload.end(), Frame::Type::INFORMATION, true, 0xFF, recieve_seq, send_seq);
+
+      // auto success = session_master.test();
+      // if (success)
+      // {
+      //   m_log->info("Link is up.");
+      // }
+      // else
+      // {
+      //   m_log->error("Link is down.");
+      // }
     }
     else
     {
@@ -250,7 +299,6 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
 
   t_rx.join();
   t_tx.join();
-#endif
   return 0;
 }
 
