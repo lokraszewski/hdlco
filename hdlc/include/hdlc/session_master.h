@@ -45,19 +45,19 @@ public:
 
   bool test(void)
   {
-    std::vector<uint8_t> test_data = {0xAA, 0xBB, 0xCC, 0xDD};
-    Frame                f1(test_data, Frame::Type::TEST, true, m_s_address); // U frame with test  data.
-    Frame                f2;
+    const std::vector<uint8_t> test_data = {0xAA, 0xBB, 0xCC, 0xDD};
+    const Frame                cmd(test_data, Frame::Type::TEST, true, m_s_address); // U frame with test  data.
+    Frame                      resp;
 
-    if (m_io.send_frame(f1) == false)
+    if (m_io.send_frame(cmd) == false)
       return false;
 
-    if (m_io.recieve_frame(f2) == false)
+    if (m_io.recieve_frame(resp) == false)
       return false;
 
-    if (f2.has_payload() && f2.get_type() == f1.get_type())
+    if (resp.has_payload() && resp.get_type() == cmd.get_type())
     {
-      return (f2.get_payload() == test_data);
+      return (resp.get_payload() == test_data);
     }
 
     return false;
