@@ -4,6 +4,12 @@
 
 add_executable(example example.cpp )
 
+target_include_directories(example
+    PUBLIC
+        $<INSTALL_INTERFACE:include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+
 target_link_libraries(example
   ${PROJECT_NAME}
   ${CONAN_LIBS}
