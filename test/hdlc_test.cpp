@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   19-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 20-11-2018
+ * @Last Modified time: 21-11-2018
  */
 
 #include <array>
@@ -16,7 +16,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "hdlc/frame_reciever.h"
+#include "hdlc/frame_pipe.h"
 #include "hdlc/hdlc.h"
 #include "hdlc/random_frame_factory.h"
 #include "hdlc/stream_helper.h"
@@ -108,33 +108,75 @@ TEST_CASE("Frame Serializer")
   }
 }
 
-TEST_CASE("Frame Char Reciever")
+TEST_CASE("Frame Pipe Test")
 {
-  FrameCharReciever reciever(1024);
-  REQUIRE(reciever.empty() == true);
+  FramePipe                  pipe1(1024);
+  const std::vector<uint8_t> test_data1 = {
+      0x7e, 1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+      22,   23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 0x7e,
+  };
 
-  SECTION("Single frames can be recieved.")
+  std::vector<uint8_t> test_data2;
+
+  SECTION("Default state.")
   {
-    auto frame         = RandomFrameFactory::make_inforamtion(128);
-    auto escaped_bytes = FrameSerializer::escape(FrameSerializer::serialize(frame));
-    reciever.recieve(escaped_bytes); // Pretend to recieve from hardware.
-    REQUIRE(reciever.frames_in() == 1);
-    auto rxbytes = reciever.pop_frame();
-    REQUIRE(reciever.empty() == true);
-    REQUIRE(rxbytes.size() == escaped_bytes.size());
-    REQUIRE(frame == FrameSerializer::deserialize(FrameSerializer::descape(rxbytes)));
+    REQUIRE(pipe1.empty() == true);
+    REQUIRE(pipe1.size() == 0);
+    REQUIRE(pipe1.space() == 1024);
+    REQUIRE(pipe1.begin() == pipe1.end());
   }
-  SECTION("Mulitple frames can be received")
+
+  SECTION("Byte writes.")
   {
-    const auto NUMBER_OF_FRAMES = 3;
-    auto       f1               = RandomFrameFactory::make_inforamtion(128);
-    auto       f2               = RandomFrameFactory::make_inforamtion(128);
-    auto       f3               = RandomFrameFactory::make_inforamtion(128);
-    reciever.recieve(FrameSerializer::escape(FrameSerializer::serialize(f1))); // Pretend to recieve from hardware.
-    reciever.recieve(FrameSerializer::escape(FrameSerializer::serialize(f2))); // Pretend to recieve from hardware.
-    reciever.recieve(FrameSerializer::escape(FrameSerializer::serialize(f3))); // Pretend to recieve from hardware.
-    REQUIRE(f1 == FrameSerializer::deserialize(FrameSerializer::descape(reciever.pop_frame())));
-    REQUIRE(f2 == FrameSerializer::deserialize(FrameSerializer::descape(reciever.pop_frame())));
-    REQUIRE(f3 == FrameSerializer::deserialize(FrameSerializer::descape(reciever.pop_frame())));
+    REQUIRE(pipe1.full() == false);
+    for (auto c : test_data1) pipe1.write(c);
+    REQUIRE(pipe1.size() == test_data1.size());
+    REQUIRE(pipe1.empty() == false);
+    REQUIRE(pipe1.frame_count() == 1);
+    REQUIRE(pipe1.partial_frame() == false);
   }
+
+  SECTION("Iterator writes.")
+  {
+    REQUIRE(pipe1.full() == false);
+    pipe1.write(test_data1.begin(), test_data1.end());
+    REQUIRE(pipe1.size() == test_data1.size());
+    REQUIRE(pipe1.empty() == false);
+    REQUIRE(pipe1.frame_count() == 1);
+    REQUIRE(pipe1.partial_frame() == false);
+  }
+
+  SECTION("Array writes.")
+  {
+    REQUIRE(pipe1.full() == false);
+    pipe1.write(test_data1);
+    REQUIRE(pipe1.size() == test_data1.size());
+    REQUIRE(pipe1.empty() == false);
+    REQUIRE(pipe1.frame_count() == 1);
+    REQUIRE(pipe1.partial_frame() == false);
+  }
+  // SECTION("Single frames can be recieved.")
+  // {
+  //   auto frame         = RandomFrameFactory::make_inforamtion(128);
+  //   auto escaped_bytes = FrameSerializer::escape(FrameSerializer::serialize(frame));
+  //   pipe1.recieve(escaped_bytes); // Pretend to recieve from hardware.
+  //   REQUIRE(pipe1.frames_in() == 1);
+  //   auto rxbytes = pipe1.pop_frame();
+  //   REQUIRE(pipe1.empty() == true);
+  //   REQUIRE(rxbytes.size() == escaped_bytes.size());
+  //   REQUIRE(frame == FrameSerializer::deserialize(FrameSerializer::descape(rxbytes)));
+  // }
+  // SECTION("Mulitple frames can be received")
+  // {
+  //   const auto NUMBER_OF_FRAMES = 3;
+  //   auto       f1               = RandomFrameFactory::make_inforamtion(128);
+  //   auto       f2               = RandomFrameFactory::make_inforamtion(128);
+  //   auto       f3               = RandomFrameFactory::make_inforamtion(128);
+  //   pipe1.recieve(FrameSerializer::escape(FrameSerializer::serialize(f1))); // Pretend to recieve from hardware.
+  //   pipe1.recieve(FrameSerializer::escape(FrameSerializer::serialize(f2))); // Pretend to recieve from hardware.
+  //   pipe1.recieve(FrameSerializer::escape(FrameSerializer::serialize(f3))); // Pretend to recieve from hardware.
+  //   REQUIRE(f1 == FrameSerializer::deserialize(FrameSerializer::descape(pipe1.pop_frame())));
+  //   REQUIRE(f2 == FrameSerializer::deserialize(FrameSerializer::descape(pipe1.pop_frame())));
+  //   REQUIRE(f3 == FrameSerializer::deserialize(FrameSerializer::descape(pipe1.pop_frame())));
+  // }
 }

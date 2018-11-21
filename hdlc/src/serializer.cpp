@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 20-11-2018
+ * @Last Modified time: 21-11-2018
  */
 
 #include "hdlc/serializer.h"
@@ -177,6 +177,7 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
   case Frame::Type::RECEIVE_READY:
   case Frame::Type::RECEIVE_NOT_READY:
   case Frame::Type::SELECTIVE_REJECT: return Frame(it, end, type, poll, address, recieve_seq);
+  case Frame::Type::TEST:
   case Frame::Type::UNNUMBERED_INFORMATION: return Frame(it, end, type, poll, address);
   case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
   case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
@@ -191,8 +192,7 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
   case Frame::Type::NONRESERVED0:
   case Frame::Type::NONRESERVED2:
   case Frame::Type::NONRESERVED1:
-  case Frame::Type::NONRESERVED3:
-  case Frame::Type::TEST: return Frame(type, poll, address);
+  case Frame::Type::NONRESERVED3: return Frame(type, poll, address);
   default: return Frame(Frame::Type::UNSET);
   }
 }

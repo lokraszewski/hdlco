@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include <boost/asio.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <serial/serial.h>
@@ -132,20 +133,7 @@ int run_listener(std::shared_ptr<serial::Serial> port)
   return 0;
 }
 
-template <typename impl_t>
-class io
-{
-public:
-  io(std::shared_ptr<impl_t> ptr) : m_ptr(ptr) {}
-  ~io() {}
-
-  bool send_frame(const Frame& f) { return false; }
-  bool recieve_frame(Frame& f) { return false; }
-
-private:
-  std::shared_ptr<impl_t> m_ptr;
-};
-
+#if 0
 template <typename io_t>
 class SessionMaster
 {
@@ -161,6 +149,7 @@ public:
     std::vector<uint8_t> test_data = {0xAA, 0xBB, 0xCC, 0xDD};
     Frame                f(test_data, Frame::Type::TEST, true, m_s_address); // U frame with test  data.
 
+    std::cout << "Creating frame: " << f << std::endl;
     // Blocking call
     if (m_io.send_frame(f) == false)
     {
@@ -174,6 +163,13 @@ public:
       std::cout << "FAILED TO RECIEVE\n";
       return false;
     }
+    else
+    {
+      if (f.get_payload() == test_data)
+      {
+        return true;
+      }
+    }
 
     return false;
   }
@@ -185,11 +181,14 @@ private:
   uint8_t m_recieve_seq = 0;
   uint8_t m_send_seq    = 0;
 };
+#endif
 
 int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
 {
+
+#if 0
   m_log->info("Creating session, this address: {:#x}, target address {:#x}", this_address, target_address);
-  io<serial::Serial>                io_serial(port);
+  io<serial::Serial>                io_serial(port, 512);
   SessionMaster<io<serial::Serial>> session_master(io_serial, this_address, target_address);
 
   using namespace std::chrono_literals;
@@ -200,20 +199,18 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
   std::thread t_rx([&]() {
     for (;;)
     {
-      std::this_thread::sleep_for(1ms);
+      io_serial.handle_in();
       std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
       if (l_end_of_program == true)
         break;
     }
-  }
-
-  );
+  });
 
   // Create the sender thread. sends any outstanding bytes.
   std::thread t_tx([&]() {
     for (;;)
     {
-      std::this_thread::sleep_for(1ms);
+      io_serial.handle_out();
       std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
       if (l_end_of_program == true)
         break;
@@ -253,7 +250,7 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
 
   t_rx.join();
   t_tx.join();
-
+#endif
   return 0;
 }
 

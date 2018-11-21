@@ -2,7 +2,7 @@
  * @Author: lokraszewski
  * @Date:   15-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 20-11-2018
+ * @Last Modified time: 21-11-2018
  */
 
 #pragma once
@@ -69,7 +69,10 @@ public:
 
   void set_type(const Type type) noexcept { m_type = type; }
   auto get_type() const noexcept { return m_type; }
-  auto is_payload_type() const noexcept { return m_type == Type::INFORMATION || m_type == Type::UNNUMBERED_INFORMATION; }
+  auto is_payload_type() const noexcept
+  {
+    return m_type == Type::INFORMATION || m_type == Type::UNNUMBERED_INFORMATION || m_type == Type::TEST;
+  }
   auto is_empty() const noexcept { return m_type == Type::UNSET; }
   bool is_information() const noexcept { return m_type == Type::INFORMATION; }
   bool is_supervisory() const noexcept { return (static_cast<uint8_t>(m_type) & 0b11) == 0b01; }
