@@ -82,6 +82,8 @@ std::ostream& operator<<(std::ostream& os, const StatusError& err)
   case StatusError::ErrorFatal: os << "ErrorFatal"; break;
   case StatusError::FailedToSend: os << "FailedToSend"; break;
   case StatusError::NoResponse: os << "NoResponse"; break;
+  case StatusError::InvalidResponse: os << "InvalidResponse"; break;
+  case StatusError::InvalidAddress: os << "InvalidAddress"; break;
   default: os << "Unknown"; break;
   }
 

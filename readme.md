@@ -90,7 +90,37 @@ The "abort sequence" 0x7D 0x7E ends a packet with an incomplete byte-stuff seque
    </tbody>
 </table>
 
+## Examples
+### Create frame. 
+```cpp
+const auto payload = std::string("PAYLOAD");
+const Frame frame(payload, Frame::Type::INFORMATION);
+```
 
+### Serialize frame. 
+```cpp
+#include "hdlc/hdlc.h"
+const Frame frame; //Some frame
+const auto raw = FrameSerializer::serialize(frame); //Pack the frame into HDLC format
+const auto raw_escaped = FrameSerializer::escape(raw); //Perform HDLC byte stuffing
+magical_user_transmit(raw_escaped); //User implementation for transfering bytes. 
+```
+### De-Serialize frame. 
+```cpp
+#include "hdlc/hdlc.h"
+const auto raw_escaped = magical_user_recieve();
+const auto raw = FrameSerializer::descape(raw_escaped);
+const Frame frame = FrameSerializer::deserialize(raw);
+if(frame.is_empty())
+{
+   //Frame empty, something has gone very wrong. 
+}
+else
+{
+   //handle the frame
+}
+
+```
 ## Design Notes
 * Currently the library only provides the means to create and serilize HDLC frames, there is no transfer implementaion or session management. This is difficult to implement since I would like for this library to be usable on both desktop and embedded platforms hence for the time being it is up to the user to implement transfer of serialized frames. 
 * The underlaying storage type is vector which requires heap allocation, on embedded platforms I have tested this with FreeRTOS allocator with little issues but it may be easier to operate on buffers that have been pre-allocated. 

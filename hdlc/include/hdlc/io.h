@@ -58,7 +58,6 @@ public:
       }
       else if (is_expired(start_tick, 1000))
       {
-        std::cout << "TIMEOUT" << std::endl;
         return false;
       }
     }
