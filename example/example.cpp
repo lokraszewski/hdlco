@@ -28,9 +28,10 @@
 #include "hdlc/io.h"
 #include "hdlc/random_frame_factory.h"
 #include "hdlc/serializer.h"
+#include "hdlc/session_master.h"
 #include "hdlc/stream_helper.h"
 
-#include "example_io.h"
+#include "example_io.h" //IO implementation for HDLC.
 
 using namespace hdlc;
 static auto m_log = spdlog::stdout_color_mt("hdlc");
@@ -68,6 +69,7 @@ int run_listener(std::shared_ptr<serial::Serial> port, bool echo)
 {
   example_io io(port); // create io port.
 
+  // auto io = std::make_shared
   for (;;)
   {
     if (io.in_frame_count())
@@ -91,107 +93,31 @@ int run_listener(std::shared_ptr<serial::Serial> port, bool echo)
   }
 }
 
-#if 0
-template <typename io_t>
-class SessionMaster
-{
-public:
-  SessionMaster(io_t& io, const uint8_t p_address = 0xFF, const uint8_t s_address = 0xFF)
-      : m_io(io), m_p_address(p_address), m_s_address(s_address)
-  {
-  }
-  ~SessionMaster() {}
-
-  bool test()
-  {
-    std::vector<uint8_t> test_data = {0xAA, 0xBB, 0xCC, 0xDD};
-    Frame                f(test_data, Frame::Type::TEST, true, m_s_address); // U frame with test  data.
-
-    std::cout << "Creating frame: " << f << std::endl;
-    // Blocking call
-    if (m_io.send_frame(f) == false)
-    {
-      std::cout << "FAILED TO SEND\n";
-      return false;
-    }
-
-    // Blocking call with timeout.
-    if (m_io.recieve_frame(f) == false)
-    {
-      std::cout << "FAILED TO RECIEVE\n";
-      return false;
-    }
-    else
-    {
-      if (f.get_payload() == test_data)
-      {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-private:
-  io_t&   m_io;
-  uint8_t m_p_address;
-  uint8_t m_s_address;
-  uint8_t m_recieve_seq = 0;
-  uint8_t m_send_seq    = 0;
-};
-#endif
-
 int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
 {
 
-#if 0
-  m_log->info("Creating session, this address: {:#x}, target address {:#x}", this_address, target_address);
-  io<serial::Serial>                io_serial(port, 512);
-  SessionMaster<io<serial::Serial>> session_master(io_serial, this_address, target_address);
-#endif
+  example_io                io(port);
+  SessionMaster<example_io> session(io, this_address, target_address);
 
-  example_io io(port);
   using namespace std::chrono_literals;
-  std::string command = "";
 
   for (;;)
   {
-    m_log->info("Enter command, type 'quit' to exit.");
-    std::cin >> command;
-    if (command == "quit")
+    if (session.connected())
     {
-      break;
-    }
-    else if (command == "rand")
-    {
-      m_log->info("Testing link...");
-
-      Frame f2;
-      auto  f1 = RandomFrameFactory::make();
-      if (io.send_frame(f1))
-      {
-        m_log->info("Sent: {}", f1);
-      }
-
-      if (io.recieve_frame(f2))
-      {
-        m_log->info("Recieved: {}", f2);
-      }
-
-      // Frame frame_tx(payload.begin(), payload.end(), Frame::Type::INFORMATION, true, 0xFF, recieve_seq, send_seq);
-
-      // auto success = session_master.test();
-      // if (success)
-      // {
-      // }
-      // else
-      // {
-      //   m_log->error("Link is down.");
-      // }
     }
     else
     {
-      m_log->error("Unknown command.");
+      auto err = session.connect();
+
+      if (err == StatusError::Success)
+      {
+        m_log->info("Successfully connected.");
+      }
+      else
+      {
+        m_log->error("Failed to connect : {}", err);
+      }
     }
   }
 

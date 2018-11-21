@@ -27,6 +27,7 @@ public:
     SET_ASYNCHRONOUS_BALANCED_MODE = 0b00101111,
     UNNUMBERED_ACKNOWLEDGMENT      = 0b01100011,
     SET_ASYNCHRONOUS_RESPONSE_MODE = 0b00001111,
+    SET_NORMAL_RESPONSE_MODE       = 0b10000011,
     INITIALIZATION                 = 0b00000111,
     DISCONNECT                     = 0b01000011,
     UNNUMBERED_POLL                = 0b00100011,
@@ -35,7 +36,6 @@ public:
     FRAME_REJECT                   = 0b10000111,
     NONRESERVED0                   = 0b00001011,
     NONRESERVED2                   = 0b01001011,
-    SET_NORMAL_RESPONSE_MODE       = 0b10000011,
     NONRESERVED1                   = 0b10001011,
     NONRESERVED3                   = 0b11001011,
     TEST                           = 0b11100011,
@@ -79,6 +79,7 @@ public:
   bool is_unnumbered() const noexcept { return !is_empty() && (static_cast<uint8_t>(m_type) & 0b11) == 0b11; }
   void set_poll(bool poll) noexcept { m_poll_flag = poll; }
   auto is_poll() const noexcept { return m_poll_flag; }
+  auto is_final() const noexcept { return is_poll(); }
 
   void set_recieve_sequence(const uint8_t sequence) noexcept { m_recieve_seq = sequence & 0b111; }
   void set_send_sequence(const uint8_t sequence) noexcept { m_send_seq = sequence & 0b111; }
@@ -102,8 +103,6 @@ public:
   bool operator==(const Frame& other) const
   {
     if (get_type() != other.get_type())
-      return false;
-    if (get_address() != other.get_address())
       return false;
     if (m_poll_flag != other.is_poll())
       return false;

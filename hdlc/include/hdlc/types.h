@@ -27,6 +27,8 @@ enum class StatusError
   Success,
   InvalidParameters,
   ErrorFatal,
+  FailedToSend,
+  NoResponse,
 };
 
 } // namespace hdlc
