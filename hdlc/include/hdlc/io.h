@@ -50,14 +50,24 @@ public:
 
     for (;;)
     {
-      if (is_expired(start_tick, 1000))
+      if (m_in_pipe.frame_count())
+      {
+        f = FrameSerializer::deserialize(FrameSerializer::descape(m_in_pipe.read_frame()));
+        if (f.is_empty() == false)
+          return true;
+      }
+      else if (is_expired(start_tick, 1000))
       {
         std::cout << "TIMEOUT" << std::endl;
         return false;
       }
     }
+  }
 
-    return false;
+  void reset()
+  {
+    m_out_pipe.clear();
+    m_in_pipe.clear();
   }
 
   size_t get_elapsed(const size_t tick) const { return get_tick() - tick; }

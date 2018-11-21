@@ -188,8 +188,27 @@ class example_io : public base_io
 {
 
 public:
-  example_io(std::shared_ptr<serial::Serial> ptr) : base_io(), m_ptr(ptr) {}
-  ~example_io() {}
+  example_io(std::shared_ptr<serial::Serial> ptr)
+      : base_io(), m_ptr(ptr), t_rx([&]() {
+          while (!is_done())
+          {
+            handle_in();
+          }
+        }),
+        t_tx([&]() {
+          while (!is_done())
+          {
+            handle_out();
+          }
+        })
+  {
+  }
+  ~example_io()
+  {
+    done();
+    t_rx.join();
+    t_tx.join();
+  }
 
   size_t get_tick(void) const override
   {
@@ -222,6 +241,22 @@ public:
 
 private:
   std::shared_ptr<serial::Serial> m_ptr;
+  std::thread                     t_rx;
+  std::thread                     t_tx;
+  mutable std::mutex              m_end_of_program_mutex;
+  bool                            m_end_of_program = false;
+
+  bool is_done() const
+  {
+    std::lock_guard<std::mutex> lock(m_end_of_program_mutex);
+    return m_end_of_program;
+  }
+
+  void done()
+  {
+    std::lock_guard<std::mutex> lock(m_end_of_program_mutex);
+    m_end_of_program = true;
+  }
 };
 
 int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
@@ -234,34 +269,8 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
 #endif
 
   example_io io(port);
-
   using namespace std::chrono_literals;
-
   std::string command = "";
-
-  // Create a reciever thread. Monitors the serial port and adds characters to the incoming buffer.
-  std::thread t_rx([&]() {
-    for (;;)
-    {
-      io.handle_in();
-      std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
-      if (l_end_of_program == true)
-        break;
-    }
-  });
-
-  // Create the sender thread. sends any outstanding bytes.
-  std::thread t_tx([&]() {
-    for (;;)
-    {
-      io.handle_out();
-      std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
-      if (l_end_of_program == true)
-        break;
-    }
-  }
-
-  );
 
   for (;;)
   {
@@ -269,22 +278,29 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
     std::cin >> command;
     if (command == "quit")
     {
-      std::lock_guard<std::mutex> lock(l_end_of_program_mutex);
-      l_end_of_program = true;
       break;
     }
-    else if (command == "test")
+    else if (command == "rand")
     {
       m_log->info("Testing link...");
 
-      auto f = RandomFrameFactory::make();
-      io.send_frame(f);
+      Frame f2;
+      auto  f1 = RandomFrameFactory::make();
+      if (io.send_frame(f1))
+      {
+        m_log->info("Sent: {}", f1);
+      }
+
+      if (io.recieve_frame(f2))
+      {
+        m_log->info("Recieved: {}", f2);
+      }
+
       // Frame frame_tx(payload.begin(), payload.end(), Frame::Type::INFORMATION, true, 0xFF, recieve_seq, send_seq);
 
       // auto success = session_master.test();
       // if (success)
       // {
-      //   m_log->info("Link is up.");
       // }
       // else
       // {
@@ -297,8 +313,6 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
     }
   }
 
-  t_rx.join();
-  t_tx.join();
   return 0;
 }
 
