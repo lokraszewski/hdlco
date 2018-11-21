@@ -59,18 +59,15 @@ auto FrameSerializer::get_frame_type(const uint8_t control)
 
 std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
 {
-  std::vector<uint8_t> frame_serialized;
-  uint8_t              control_byte = static_cast<uint8_t>(frame.get_type());
+  uint8_t control_byte = static_cast<uint8_t>(frame.get_type());
 
   switch (frame.get_type())
   {
   case Frame::Type::RECEIVE_READY:
   case Frame::Type::RECEIVE_NOT_READY:
   case Frame::Type::REJECT:
-  case Frame::Type::SELECTIVE_REJECT: control_byte |= (frame.get_recieve_sequence() & 0b111) << 5; break;
-  case Frame::Type::INFORMATION:
-    control_byte |= (frame.get_send_sequence() & 0b111) << 1 | (frame.get_recieve_sequence() & 0b111) << 5;
-    break;
+  case Frame::Type::SELECTIVE_REJECT: control_byte |= (frame.get_recieve_sequence()) << 5; break;
+  case Frame::Type::INFORMATION: control_byte |= (frame.get_send_sequence()) << 1 | (frame.get_recieve_sequence()) << 5; break;
   case Frame::Type::UNNUMBERED_INFORMATION:
   case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
   case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
@@ -90,6 +87,10 @@ std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
   case Frame::Type::UNSET:
   default: assert(false); // Unknown frame type;
   }
+
+  std::vector<uint8_t> frame_serialized;
+
+  frame_serialized.reserve(frame.is_payload_type() ? (6 + frame.payload_size()) : 6);
 
   if (frame.is_poll())
   {

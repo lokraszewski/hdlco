@@ -70,6 +70,8 @@ public:
     m_in_pipe.clear();
   }
 
+  size_t in_frame_count(void) const { return m_in_pipe.frame_count(); }
+
   size_t get_elapsed(const size_t tick) const { return get_tick() - tick; }
   bool   is_expired(const size_t tick, const size_t threshold) const { return get_elapsed(tick) > threshold; }
 

@@ -42,91 +42,53 @@ void print_bytes(T& bytes)
   std::cout << std::endl;
 }
 
-int run_loopback(std::shared_ptr<serial::Serial> port, const int number_of_runs)
-{
-  port->flush(); // flush both input and output.
-
-  m_log->info("Loopback test with {} packets. ", number_of_runs);
-  for (auto run = 0; run < number_of_runs; ++run)
-  {
-    auto frame = RandomFrameFactory::make_inforamtion(128);
-    m_log->info("Sending frame: {}", frame);
-    const auto raw_bytes_tx = FrameSerializer::escape(FrameSerializer::serialize(frame));
-    port->write(raw_bytes_tx);
-
-    std::vector<uint8_t> bytes_raw;
-    if (port->read(bytes_raw, raw_bytes_tx.size()) == raw_bytes_tx.size())
-    {
-      auto frame_rx = FrameSerializer::deserialize(FrameSerializer::descape(bytes_raw));
-      if (frame_rx != frame)
-      {
-        m_log->error(" Loopback failed, \n\tsend {}, \n\trecieved: {} \n\rRAW:", frame, frame_rx);
-        print_bytes(bytes_raw);
-        return -1;
-      }
-    }
-    else
-    {
-      m_log->error("Loopback failed for frame: {} ", frame);
-      return -1;
-    }
-  }
-
-  return 0;
-}
-
 int run_sender(std::shared_ptr<serial::Serial> port)
 {
-
-  port->flush(); // flush both input and output.
-
-  std::string payload     = "";
-  uint8_t     recieve_seq = 0;
-  uint8_t     send_seq    = 0;
+  example_io  io(port); // create io port.
+  std::string payload = "";
   while (payload != "quit")
   {
     m_log->info("Please enter command ('quit' to stop)");
     std::cin >> payload;
-
-    Frame frame_tx(payload.begin(), payload.end(), Frame::Type::INFORMATION, true, 0xFF, recieve_seq, send_seq);
-
-    m_log->info("Sending : {}", frame_tx);
-    port->write(FrameSerializer::escape(FrameSerializer::serialize(frame_tx)));
+    Frame f(payload.begin(), payload.end());
+    if (io.send_frame(f))
+    {
+      m_log->info("Sent : {}", f);
+    }
+    else
+    {
+      m_log->error("Failed to send : {}", f);
+    }
   }
 
   return 0;
 }
 
-int run_listener(std::shared_ptr<serial::Serial> port)
+int run_listener(std::shared_ptr<serial::Serial> port, bool echo)
 {
-
-  port->flush(); // flush both input and output.
-  FrameCharReciever rx(512);
-  uint8_t           byte;
+  example_io io(port); // create io port.
 
   for (;;)
   {
-    while (!rx.full() && port->read(&byte, 1))
+    if (io.in_frame_count())
     {
-      rx.recieve(byte);
-    }
-
-    if (rx.frames_in())
-    {
-      auto frame_rx = FrameSerializer::deserialize(FrameSerializer::descape(rx.pop_frame()));
-      m_log->info("Recieved : {}", frame_rx);
-
-      if (frame_rx.has_payload())
+      Frame f;
+      if (io.recieve_frame(f))
       {
-        std::string payload(frame_rx.begin(), frame_rx.end());
-        m_log->info("Payload: {}", payload);
-        if ("quit" == payload)
-          return 0;
+        if (echo)
+          io.send_frame(f);
+
+        m_log->info("Recieved: {}", f);
+        if (f.has_payload())
+        {
+          std::string payload(f.begin(), f.end());
+          m_log->info("Payload: {}", payload);
+          if ("quit" == payload)
+            return 0;
+        }
       }
     }
   }
-
-  return 0;
 }
 
 #if 0
@@ -256,20 +218,18 @@ int run(int argc, char** argv)
   }
 
   const auto run_mode = (argc >= 3) ? std::stoi(argv[2]) : 0;
-
-  m_log->info("Running in {} mode", run_mode);
-
   switch (run_mode)
   {
-  case 1: return run_sender(port);
-  case 2: return run_listener(port);
+  case 0: m_log->info("Running listener with echo "); return run_listener(port, true);
+  case 1: m_log->info("Running listener without echo "); return run_listener(port, false);
+  case 2: m_log->info("Running sender "); return run_sender(port);
   case 3:
   {
     const auto this_address   = (argc >= 4) ? std::stoi(argv[3]) : 1;
     const auto target_address = (argc >= 5) ? std::stoi(argv[4]) : 2;
     return run_normal_master(port, this_address, target_address);
   }
-  default: return run_loopback(port, 10);
+  default: m_log->error("Unknown mode! "); return -1;
   }
 }
 

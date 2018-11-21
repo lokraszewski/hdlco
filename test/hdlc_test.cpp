@@ -71,11 +71,17 @@ TEST_CASE("Frame Creation")
     REQUIRE(frame.get_payload() == payload);
     REQUIRE(escaped_bytes.size() == (bytes.size() + 2));
 
+    REQUIRE(escaped_bytes[3] == 1);
+    REQUIRE(escaped_bytes[4] == 2);
+    REQUIRE(escaped_bytes[5] == 3);
+
     REQUIRE(escaped_bytes[6] == 0x7d);
     REQUIRE(escaped_bytes[7] == (0x7e ^ 0x20));
 
     REQUIRE(escaped_bytes[8] == 0x7d);
     REQUIRE(escaped_bytes[9] == (0x7d ^ 0x20));
+
+    REQUIRE(escaped_bytes[10] == 4);
   }
 
   SECTION("Compairson operators")
