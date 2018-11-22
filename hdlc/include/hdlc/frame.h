@@ -18,7 +18,8 @@ class Frame
 public:
   enum class Type : uint8_t
   {
-    I    = 0b00000000,
+    I = 0b00000000,
+
     RR   = 0b00000001,
     RNR  = 0b00001001,
     REJ  = 0b00000101,
@@ -48,7 +49,7 @@ public:
     UNSET = 0xFF,
   };
 
-  Frame(const Type type = Type::I, const bool poll = true, const uint8_t address = 0xFF, const uint8_t recieve_seq = 0,
+  Frame(const Type type = Type::UNSET, const bool poll = true, const uint8_t address = 0xFF, const uint8_t recieve_seq = 0,
         const uint8_t send_seq = 0)
       : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(recieve_seq & 0b111), m_send_seq(send_seq & 0b111)
   {

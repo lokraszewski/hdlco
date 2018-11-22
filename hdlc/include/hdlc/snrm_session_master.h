@@ -29,7 +29,6 @@ namespace snrm
 template <typename io_t>
 class Master : public Session
 {
-  /* This is neccessary because session is a template class. */
 
 public:
   Master(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session(paddr, saddr), m_io(io) {}

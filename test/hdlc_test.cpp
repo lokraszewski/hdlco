@@ -36,7 +36,7 @@ TEST_CASE("Frame Creation")
   {
     Frame frame;
     REQUIRE(frame.get_address() == 0xFF);
-    REQUIRE(frame.get_type() == Frame::Type::I);
+    REQUIRE(frame.get_type() == Frame::Type::UNSET);
     REQUIRE(frame.get_recieve_sequence() == 0);
     REQUIRE(frame.get_send_sequence() == 0);
     REQUIRE(frame.has_payload() == false);
