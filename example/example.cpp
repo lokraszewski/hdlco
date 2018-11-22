@@ -101,20 +101,35 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
 
   using namespace std::chrono_literals;
 
+  size_t test_count = 0;
   for (;;)
   {
     if (session.connected())
     {
+      ++test_count;
+
       const auto err = session.test();
       if (err != StatusError::Success)
       {
         m_log->error("Connection test failed: {}", err);
+      }
+
+      if ((test_count % 100) == 0)
+      {
+        std::string payload = "HELLO";
+        m_log->info("Sending unknown frame type : {}", session.send_payload(payload));
       }
       // std::this_thread::sleep_for(2s);
     }
     else
     {
       m_log->info("Not connected attempting to connect.");
+
+      {
+        std::string payload = "HELLO";
+        m_log->info("Sending unknown frame type : {}", session.send_payload(payload));
+      }
+
       const auto err = session.connect();
       if (err == StatusError::Success)
       {

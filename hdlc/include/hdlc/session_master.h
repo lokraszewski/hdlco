@@ -95,9 +95,29 @@ public:
   {
     auto ret = send_recieve(cmd, resp);
 
+    if (cmd.is_poll())
+    {
+      switch (resp.get_type())
+      {
+      case Frame::Type::SARM_DM: ret = StatusError::ConnectionError; break;
+      default: break;
+      }
+    }
+
     if (ret != StatusError::Success)
       disconnect();
 
+    return ret;
+  }
+
+  template <typename buffer_t>
+  StatusError send_payload(const buffer_t& buffer)
+  {
+    const Frame cmd(buffer, Frame::Type::I, true, m_secondary);
+    Frame       resp;
+    const auto  ret = send_command(cmd, resp);
+    if (ret == StatusError::Success)
+      std::cout << __FUNCTION__ << ' ' << resp << std::endl;
     return ret;
   }
 
@@ -174,8 +194,13 @@ public:
 
   StatusError handle(const Frame& cmd, Frame& resp)
   {
-    std::cout << __FUNCTION__ << std::endl;
-    if (m_handler_map.count(cmd.get_type()))
+    // If we are disconnected then send back SARM_DM unless the frame is a setup frame.
+    if (!connected() && cmd.get_type() != Frame::Type::SNRM)
+    {
+      resp = Frame(Frame::Type::SARM_DM, true, secondary());
+      return StatusError::Success;
+    }
+    else if (m_handler_map.count(cmd.get_type()))
     {
       return m_handler_map[cmd.get_type()](*this, cmd, resp);
     }
@@ -197,16 +222,14 @@ public:
         /* Check seq*/
         const auto ret = handle(cmd, resp);
 
-        if (ret == StatusError::Success)
+        switch (ret)
         {
+        case StatusError::Success:
           if (resp.is_valid())
-          {
             m_io.send_frame(resp);
-          }
-        }
-        else
-        {
-          std::cout << "HANDLER: " << ret << std::endl;
+          break;
+
+        default: disconnect(); break;
         }
       }
     }
@@ -223,7 +246,6 @@ public:
 
   static StatusError default_snrm_handler(SessionClient<io_t>& session, const Frame& cmd, Frame& resp)
   {
-    std::cout << __FUNCTION__ << " : " << cmd << std::endl;
     session.set_status(ConnectionStatus::Connected);
     resp = Frame(Frame::Type::UA, true, session.secondary());
     return StatusError::Success;
@@ -231,7 +253,7 @@ public:
 
   static StatusError default_test_handler(SessionClient<io_t>& session, const Frame& cmd, Frame& resp)
   {
-    std::cout << __FUNCTION__ << " : " << cmd << std::endl;
+    // Create a frame with identical payload.
     resp = Frame(cmd.get_payload(), Frame::Type::TEST, true, session.secondary());
     return StatusError::Success;
   }

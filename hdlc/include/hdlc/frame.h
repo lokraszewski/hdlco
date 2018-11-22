@@ -81,6 +81,7 @@ public:
   bool is_information() const noexcept { return m_type == Type::I; }
   bool is_supervisory() const noexcept { return (static_cast<uint8_t>(m_type) & 0b11) == 0b01; }
   bool is_unnumbered() const noexcept { return !is_empty() && (static_cast<uint8_t>(m_type) & 0b11) == 0b11; }
+
   void set_poll(bool poll) noexcept { m_poll_flag = poll; }
   auto is_poll() const noexcept { return m_poll_flag; }
   auto is_final() const noexcept { return is_poll(); }
