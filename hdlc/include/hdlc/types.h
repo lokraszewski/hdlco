@@ -29,6 +29,7 @@ enum class StatusError
   InvalidResponse,
   InvalidSequence,
   InvalidAddress,
+  InvalidRequest,
   ConnectionError,
   FailedToSend,
   NoResponse,

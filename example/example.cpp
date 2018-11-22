@@ -105,11 +105,17 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
   {
     if (session.connected())
     {
+      const auto err = session.test();
+      if (err != StatusError::Success)
+      {
+        m_log->error("Connection test failed: {}", err);
+      }
+      // std::this_thread::sleep_for(2s);
     }
     else
     {
       m_log->info("Not connected attempting to connect.");
-      auto err = session.connect();
+      const auto err = session.connect();
       if (err == StatusError::Success)
       {
         m_log->info("Successfully connected.");
@@ -155,7 +161,7 @@ int run(int argc, char** argv)
   }
 
   const std::string port_path(argv[1]);
-  auto              port = std::make_shared<serial::Serial>(port_path, 9600, serial::Timeout::simpleTimeout(500));
+  auto              port = std::make_shared<serial::Serial>(port_path, 9600, serial::Timeout::simpleTimeout(10));
 
   m_log->info("Serial port: {} open: {} ", port_path, port->isOpen());
 

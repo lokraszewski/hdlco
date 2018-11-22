@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 21-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #pragma once
@@ -56,15 +56,25 @@ public:
     m_boundary_count = 0;
   }
 
-  auto frame_count(void) const
+  auto boundary_count(void) const
   {
     std::lock_guard<std::mutex> _l(m_mutex);
-    return m_boundary_count >> 1;
+    return m_boundary_count;
   }
+  auto frame_count(void) const { return boundary_count() >> 1; }
   auto partial_frame(void) const
   {
-    std::lock_guard<std::mutex> _l(m_mutex);
-    return m_boundary_count && m_boundary_count & 1 ? true : false;
+    const auto cnt = boundary_count();
+    return cnt && cnt & 1 ? true : false;
+  }
+
+  void clear_partial(void)
+  {
+    if (partial_frame())
+    {
+      while (!empty() && read() != protocol_bytes::frame_boundary)
+        ;
+    }
   }
 
   uint8_t read(void)

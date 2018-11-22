@@ -8,6 +8,7 @@
 #pragma once
 
 #include "frame_pipe.h"
+#include "stream_helper.h"
 #include "types.h"
 
 namespace hdlc
@@ -51,32 +52,35 @@ public:
       if (m_in_pipe.frame_count())
       {
         f = FrameSerializer::deserialize(FrameSerializer::descape(m_in_pipe.read_frame()));
-        if (f.is_empty() == false)
+        if (f.is_valid())
+        {
           return true;
+        }
       }
-      else if (is_expired(start_tick, 1000))
+      else if (is_expired(start_tick, m_response_timeout))
       {
+        m_in_pipe.clear_partial(); // Clear any partial frames since we dont know if the timeout has occured mid frame.
         return false;
       }
     }
   }
 
   size_t in_frame_count(void) const { return m_in_pipe.frame_count(); }
-
   size_t get_elapsed(const size_t tick) const { return get_tick() - tick; }
   bool   is_expired(const size_t tick, const size_t threshold) const { return get_elapsed(tick) > threshold; }
 
   /*----------  Public interface  ----------*/
-  virtual size_t get_tick(void) const = 0;
-  virtual bool   handle_out(void)     = 0;
-  virtual bool   handle_in(void)      = 0;
-  virtual void   reset()              = 0;
+  virtual size_t get_tick(void) const   = 0;
+  virtual bool   handle_out(void)       = 0;
+  virtual bool   handle_in(void)        = 0;
+  virtual void   reset()                = 0;
+  virtual void   sleep(const size_t ms) = 0;
 
 private:
 protected:
   FramePipe    m_out_pipe; //< Contains outgoing data.
   FramePipe    m_in_pipe;  //< Contains incoming data.
-  const size_t m_response_timeout = 1000;
+  const size_t m_response_timeout = 2000;
 };
 
 } // namespace hdlc

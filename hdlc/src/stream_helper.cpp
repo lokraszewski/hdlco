@@ -54,8 +54,21 @@ std::ostream& operator<<(std::ostream& os, const Frame& f)
   }
   else
   {
-    os << fmt::format("HDLC {} Address: {:#x}, Poll: {}, Send Seq {}, Recieve Seq {}", f.get_type(), f.get_address(), f.is_poll(),
-                      f.get_send_sequence(), f.get_recieve_sequence());
+
+    if (f.is_information())
+    {
+      os << fmt::format("HDLC {} Address: {:#x}, Poll: {}, Send {}, Recieve {}", f.get_type(), f.get_address(), f.is_poll(),
+                        f.get_send_sequence(), f.get_recieve_sequence());
+    }
+    else if (f.is_supervisory())
+    {
+      os << fmt::format("HDLC {} Address: {:#x}, Poll: {}, Recieve {}", f.get_type(), f.get_address(), f.is_poll(),
+                        f.get_recieve_sequence());
+    }
+    else if (f.is_unnumbered())
+    {
+      os << fmt::format("HDLC {} Address: {:#x}, Poll: {}", f.get_type(), f.get_address(), f.is_poll());
+    }
 
     if (f.has_payload())
     {
@@ -83,6 +96,7 @@ std::ostream& operator<<(std::ostream& os, const StatusError& err)
   case StatusError::InvalidAddress: os << "InvalidAddress"; break;
   case StatusError::InvalidSequence: os << "InvalidSequence"; break;
   case StatusError::ConnectionError: os << "ConnectionError"; break;
+  case StatusError::InvalidRequest: os << "InvalidRequest"; break;
   default: os << "Unknown"; break;
   }
 

@@ -14,6 +14,7 @@
 #include "stream_helper.h"
 
 #include <iostream>
+#include <map>
 #include <vector>
 
 namespace hdlc
@@ -61,45 +62,38 @@ public:
   SessionMaster(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session(paddr, saddr), m_io(io) {}
   virtual ~SessionMaster() {}
 
-  StatusError send_command(const Frame& cmd, Frame& resp)
+  StatusError send_recieve(const Frame& cmd, Frame& resp)
   {
+
     if (!m_io.send_frame(cmd))
     {
       return StatusError::FailedToSend;
     }
 
-    StatusError ret = StatusError::Busy;
-
-    do
+    if (cmd.is_poll())
     {
-      if (!m_io.recieve_frame(resp))
-        ret = StatusError::NoResponse;
-      else if (!resp.is_final())
-        ret = StatusError::Busy;
-      else if (resp.get_address() != m_primary)
-        ret = StatusError::InvalidAddress;
-      else
+
+      for (;;)
       {
-        // Check if response has sequence, and if so check the sequence.
-        if ((resp.is_information() || resp.is_supervisory()) && resp.get_recieve_sequence() != m_send_seq)
-        {
-          ret = StatusError::InvalidSequence;
-        }
+        Frame temp(Frame::Type::UNSET);
+        if (m_io.recieve_frame(temp) == false)
+          return StatusError::NoResponse;
+        else if (resp.get_address() != primary())
+          return StatusError::InvalidAddress;
         else
         {
-          // Check the response.
-          switch (resp.get_type())
-          {
-          // Acknoledge - success.
-          case Frame::Type::UA: ret = StatusError::Success; break;
-          // Diconnect mode.
-          case Frame::Type::SARM_DM: ret = StatusError::ConnectionError; break;
-          default: break;
-          }
+          resp = std::move(temp);
+          break;
         }
       }
+    }
 
-    } while (ret == StatusError::Busy);
+    return StatusError::Success;
+  }
+
+  StatusError send_command(const Frame& cmd, Frame& resp)
+  {
+    auto ret = send_recieve(cmd, resp);
 
     if (ret != StatusError::Success)
       disconnect();
@@ -110,17 +104,14 @@ public:
   StatusError test(void)
   {
     const std::vector<uint8_t> test_data = {0xAA, 0xBB, 0xCC, 0xDD};
-    const Frame                cmd(test_data, Frame::Type::TEST, true, m_secondary, m_recieve_seq, m_send_seq++);
+    const Frame                cmd(test_data, Frame::Type::TEST, true, m_secondary);
     Frame                      resp;
 
-    auto ret = send_command(cmd, resp);
+    const auto ret = send_command(cmd, resp);
 
-    if (ret == StatusError::Success)
+    if (ret == StatusError::Success && cmd != resp)
     {
-      if (!resp.has_payload() || resp.get_type() != cmd.get_type() || resp.get_payload() != test_data)
-      {
-        ret = StatusError::InvalidResponse;
-      }
+      return StatusError::InvalidResponse;
     }
 
     return ret;
@@ -162,33 +153,35 @@ private:
 template <typename io_t>
 class SessionClient : public Session
 {
+
+  /* need information handlers. */
+  /* handle I frame*/
+  /* default frame handler. */
+  /* Use a map? or just a table?*/
+
 public:
-  SessionClient(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session(paddr, saddr), m_io(io) {}
+  using handler_t = std::function<StatusError(SessionClient<io_t>&, const Frame&, Frame&)>;
+
+  SessionClient(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session(paddr, saddr), m_io(io)
+  {
+    install_handler(Frame::Type::SNRM, default_snrm_handler);
+    install_handler(Frame::Type::TEST, default_test_handler);
+  }
   virtual ~SessionClient() {}
 
-  void handle_connected(const Frame& cmd) { std::cout << __FUNCTION__ << std::endl; }
+  void install_handler(const Frame::Type type, handler_t handler) { m_handler_map[type] = handler; }
+  void uninstall_handler(const Frame::Type type) { m_handler_map[type] = default_handler; }
 
-  void handle_disconnected(const Frame& cmd)
+  StatusError handle(const Frame& cmd, Frame& resp)
   {
     std::cout << __FUNCTION__ << std::endl;
-    switch (cmd.get_type())
+    if (m_handler_map.count(cmd.get_type()))
     {
-    case Frame::Type::SNRM:
-      /* normal response mode requested. Valid operation type so send back UA. */
-      {
-        /* Set mode to connected. */
-        set_status(ConnectionStatus::Connected);
-        const Frame resp(Frame::Type::UA, true, m_secondary);
-        m_io.send_frame(resp);
-      }
-      break;
-    default:
-      /* Send back disconnected. */
-      {
-        const Frame resp(Frame::Type::SARM_DM, true, m_secondary);
-        m_io.send_frame(resp);
-      }
-      break;
+      return m_handler_map[cmd.get_type()](*this, cmd, resp);
+    }
+    else
+    {
+      return default_handler(*this, cmd, resp);
     }
   }
 
@@ -196,26 +189,24 @@ public:
   {
     /* If we are connected then wait for frames*/
     Frame cmd;
+    Frame resp(Frame::Type::UNSET); // Set to empty frame to avoid sending unless set by handler.
     if (m_io.recieve_frame(cmd))
     {
-      std::cout << "NEW FRAME IN: " << cmd << std::endl;
-
-      if (cmd.get_address() != primary())
-      {
-        /* Address does not match this session, discard the frame. */
-        std::cout << "ADDRESS MISMATCH" << std::endl;
-      }
-      else
+      if (cmd.get_address() == primary())
       {
         /* Check seq*/
-        std::cout << "ADDRESS MATCH" << std::endl;
-        if (connected())
+        const auto ret = handle(cmd, resp);
+
+        if (ret == StatusError::Success)
         {
-          handle_connected(cmd);
+          if (resp.is_valid())
+          {
+            m_io.send_frame(resp);
+          }
         }
         else
         {
-          handle_disconnected(cmd);
+          std::cout << "HANDLER: " << ret << std::endl;
         }
       }
     }
@@ -223,8 +214,31 @@ public:
     return get_status();
   }
 
+  /* By default if the user does not install a handler this handler will be called.*/
+  static StatusError default_handler(SessionClient<io_t>& session, const Frame& cmd, Frame& resp)
+  {
+    std::cout << __FUNCTION__ << " : " << cmd << std::endl;
+    return StatusError::InvalidRequest;
+  }
+
+  static StatusError default_snrm_handler(SessionClient<io_t>& session, const Frame& cmd, Frame& resp)
+  {
+    std::cout << __FUNCTION__ << " : " << cmd << std::endl;
+    session.set_status(ConnectionStatus::Connected);
+    resp = Frame(Frame::Type::UA, true, session.secondary());
+    return StatusError::Success;
+  }
+
+  static StatusError default_test_handler(SessionClient<io_t>& session, const Frame& cmd, Frame& resp)
+  {
+    std::cout << __FUNCTION__ << " : " << cmd << std::endl;
+    resp = Frame(cmd.get_payload(), Frame::Type::TEST, true, session.secondary());
+    return StatusError::Success;
+  }
+
 private:
-  io_t& m_io;
+  io_t&                                  m_io;
+  std::map<const Frame::Type, handler_t> m_handler_map;
 };
 
 } // namespace hdlc

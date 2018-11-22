@@ -77,6 +77,7 @@ public:
   auto get_type() const noexcept { return m_type; }
   auto is_payload_type() const noexcept { return m_type == Type::I || m_type == Type::UI || m_type == Type::TEST; }
   auto is_empty() const noexcept { return m_type == Type::UNSET; }
+  auto is_valid() const noexcept { return !is_empty(); }
   bool is_information() const noexcept { return m_type == Type::I; }
   bool is_supervisory() const noexcept { return (static_cast<uint8_t>(m_type) & 0b11) == 0b01; }
   bool is_unnumbered() const noexcept { return !is_empty() && (static_cast<uint8_t>(m_type) & 0b11) == 0b11; }

@@ -99,6 +99,8 @@ public:
     m_in_pipe.clear();
   }
 
+  void sleep(const size_t ms) override { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
+
 private:
   std::shared_ptr<serial::Serial> m_ptr;
   std::thread                     t_rx;
