@@ -94,7 +94,7 @@ The "abort sequence" 0x7D 0x7E ends a packet with an incomplete byte-stuff seque
 ### Create frame. 
 ```cpp
 const auto payload = std::string("PAYLOAD");
-const Frame frame(payload, Frame::Type::INFORMATION);
+const Frame frame(payload, Frame::Type::I);
 ```
 
 ### Serialize frame. 

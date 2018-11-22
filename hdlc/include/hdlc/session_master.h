@@ -11,66 +11,58 @@
 #include "io.h"
 #include "types.h"
 
+#include "stream_helper.h"
+
+#include <iostream>
 #include <vector>
 
 namespace hdlc
 {
 
-enum class ConnectionStatus
-{
-  Disconnected,
-  Connecting,
-  Connected,
-};
-
-template <typename io_t>
 class Session
 {
 public:
-  Session(io_t& io, const uint8_t primary, const uint8_t secondary) : m_io(io), m_primary(primary), m_secondary(secondary) {}
+  Session(const uint8_t primary, const uint8_t secondary) : m_primary(primary), m_secondary(secondary) {}
   virtual ~Session() {}
 
-  auto connected() const noexcept { return m_connected; }
-
-  auto primary() const noexcept { return m_primary; }
-  auto secondary() const noexcept { return m_secondary; }
-  void reset()
+  uint8_t          primary() const noexcept { return m_primary; }
+  uint8_t          secondary() const noexcept { return m_secondary; }
+  void             disconnect() { set_status(ConnectionStatus::Disconnected); }
+  bool             connected() const noexcept { return get_status() == ConnectionStatus::Connected; }
+  ConnectionStatus get_status() const noexcept { return m_status; }
+  void             set_status(ConnectionStatus status)
   {
-    m_send_seq    = 0;
-    m_recieve_seq = 0;
-    m_connected   = false;
-    m_io.reset();
+    switch (status)
+    {
+    case ConnectionStatus::Connecting:
+    case ConnectionStatus::Connected: m_status = status; break;
+    default:
+      m_status      = ConnectionStatus::Disconnected;
+      m_send_seq    = 0;
+      m_recieve_seq = 0;
+      break;
+    }
   }
 
 protected:
-  bool  m_connected = false;
-  io_t& m_io;
-
-  uint8_t m_primary;
-  uint8_t m_secondary;
-  uint8_t m_send_seq    = 0;
-  uint8_t m_recieve_seq = 0;
+  uint8_t          m_primary;
+  uint8_t          m_secondary;
+  ConnectionStatus m_status      = ConnectionStatus::Disconnected;
+  uint8_t          m_send_seq    = 0;
+  uint8_t          m_recieve_seq = 0;
 };
 
 template <typename io_t>
-class SessionMaster : public Session<io_t>
+class SessionMaster : public Session
 {
   /* This is neccessary because session is a template class. */
-  using Session<io_t>::m_connected;
-  using Session<io_t>::m_io;
-  using Session<io_t>::m_primary;
-  using Session<io_t>::m_secondary;
-  using Session<io_t>::m_send_seq;
-  using Session<io_t>::m_recieve_seq;
 
 public:
-  SessionMaster(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session<io_t>(io, paddr, saddr) {}
+  SessionMaster(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session(paddr, saddr), m_io(io) {}
   virtual ~SessionMaster() {}
 
   StatusError send_command(const Frame& cmd, Frame& resp)
   {
-    cmd.set_send_sequence(m_send_seq++);
-
     if (!m_io.send_frame(cmd))
     {
       return StatusError::FailedToSend;
@@ -86,16 +78,31 @@ public:
         ret = StatusError::Busy;
       else if (resp.get_address() != m_primary)
         ret = StatusError::InvalidAddress;
-      else if (cmd.is_poll() && resp.get_recieve_sequence() != m_send_seq)
-        ret = StatusError::InvalidSequence;
-      else if (resp.get_type() == Frame::Type::UNNUMBERED_ACKNOWLEDGMENT)
-        ret = StatusError::Success;
       else
-        ret = StatusError::InvalidResponse;
+      {
+        // Check if response has sequence, and if so check the sequence.
+        if ((resp.is_information() || resp.is_supervisory()) && resp.get_recieve_sequence() != m_send_seq)
+        {
+          ret = StatusError::InvalidSequence;
+        }
+        else
+        {
+          // Check the response.
+          switch (resp.get_type())
+          {
+          // Acknoledge - success.
+          case Frame::Type::UA: ret = StatusError::Success; break;
+          // Diconnect mode.
+          case Frame::Type::SARM_DM: ret = StatusError::ConnectionError; break;
+          default: break;
+          }
+        }
+      }
+
     } while (ret == StatusError::Busy);
 
     if (ret != StatusError::Success)
-      m_connected = false;
+      disconnect();
 
     return ret;
   }
@@ -103,7 +110,7 @@ public:
   StatusError test(void)
   {
     const std::vector<uint8_t> test_data = {0xAA, 0xBB, 0xCC, 0xDD};
-    const Frame                cmd(test_data, Frame::Type::TEST, true, m_secondary); // U frame with test  data.
+    const Frame                cmd(test_data, Frame::Type::TEST, true, m_secondary, m_recieve_seq, m_send_seq++);
     Frame                      resp;
 
     auto ret = send_command(cmd, resp);
@@ -119,54 +126,105 @@ public:
     return ret;
   }
 
-  void disconnect() { m_connected = false; }
-
   StatusError connect()
   {
-    auto ret = StatusError::Success;
-
-    if (m_connected == false)
+    if (!connected())
     {
-      const Frame cmd(Frame::Type::SET_NORMAL_RESPONSE_MODE, true, m_secondary);
+      const Frame cmd(Frame::Type::SNRM, true, m_secondary);
       Frame       resp;
       auto        ret = send_command(cmd, resp);
 
       if (ret == StatusError::Success)
       {
-        if (resp.get_type() == Frame::Type::UNNUMBERED_ACKNOWLEDGMENT)
+        if (resp.get_type() == Frame::Type::UA)
         {
-          m_connected = true;
+          set_status(ConnectionStatus::Connected);
+          ret = StatusError::Success;
         }
         else
         {
           ret = StatusError::InvalidResponse;
         }
       }
-    }
 
-    return ret;
+      return ret;
+    }
+    else
+    {
+      return StatusError::Success;
+    }
   }
+
+private:
+  io_t& m_io;
 };
 
 template <typename io_t>
-class SessionClient : public Session<io_t>
+class SessionClient : public Session
 {
-  /* This is neccessary because session is a template class. */
-  using Session<io_t>::m_connected;
-  using Session<io_t>::m_io;
-  using Session<io_t>::m_primary;
-  using Session<io_t>::m_secondary;
-
 public:
-  SessionClient(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session<io_t>(io, paddr, saddr) {}
+  SessionClient(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session(paddr, saddr), m_io(io) {}
   virtual ~SessionClient() {}
 
-  void run(void)
+  void handle_connected(const Frame& cmd) { std::cout << __FUNCTION__ << std::endl; }
+
+  void handle_disconnected(const Frame& cmd)
+  {
+    std::cout << __FUNCTION__ << std::endl;
+    switch (cmd.get_type())
+    {
+    case Frame::Type::SNRM:
+      /* normal response mode requested. Valid operation type so send back UA. */
+      {
+        /* Set mode to connected. */
+        set_status(ConnectionStatus::Connected);
+        const Frame resp(Frame::Type::UA, true, m_secondary);
+        m_io.send_frame(resp);
+      }
+      break;
+    default:
+      /* Send back disconnected. */
+      {
+        const Frame resp(Frame::Type::SARM_DM, true, m_secondary);
+        m_io.send_frame(resp);
+      }
+      break;
+    }
+  }
+
+  ConnectionStatus run(void)
   {
     /* If we are connected then wait for frames*/
+    Frame cmd;
+    if (m_io.recieve_frame(cmd))
+    {
+      std::cout << "NEW FRAME IN: " << cmd << std::endl;
 
+      if (cmd.get_address() != primary())
+      {
+        /* Address does not match this session, discard the frame. */
+        std::cout << "ADDRESS MISMATCH" << std::endl;
+      }
+      else
+      {
+        /* Check seq*/
+        std::cout << "ADDRESS MATCH" << std::endl;
+        if (connected())
+        {
+          handle_connected(cmd);
+        }
+        else
+        {
+          handle_disconnected(cmd);
+        }
+      }
+    }
     /* If we are not connected then reject everything except setup. */
+    return get_status();
   }
+
+private:
+  io_t& m_io;
 };
 
 } // namespace hdlc

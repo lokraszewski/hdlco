@@ -19,30 +19,28 @@ std::ostream& operator<<(std::ostream& os, const Frame::Type& type)
 {
   switch (type)
   {
-
-  case Frame::Type::INFORMATION: os << "INFORMATION"; break;
-  case Frame::Type::RECEIVE_READY: os << "RECEIVE_READY"; break;
-  case Frame::Type::RECEIVE_NOT_READY: os << "RECEIVE_NOT_READY"; break;
-  case Frame::Type::REJECT: os << "REJECT"; break;
-  case Frame::Type::SELECTIVE_REJECT: os << "SELECTIVE_REJECT"; break;
-  case Frame::Type::UNNUMBERED_INFORMATION: os << "UNNUMBERED_INFORMATION"; break;
-  case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE: os << "SET_ASYNCHRONOUS_BALANCED_MODE"; break;
-  case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT: os << "UNNUMBERED_ACKNOWLEDGMENT"; break;
-  case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE: os << "SET_ASYNCHRONOUS_RESPONSE_MODE"; break;
-  case Frame::Type::INITIALIZATION: os << "INITIALIZATION"; break;
-  case Frame::Type::DISCONNECT: os << "DISCONNECT"; break;
-  case Frame::Type::UNNUMBERED_POLL: os << "UNNUMBERED_POLL"; break;
-  case Frame::Type::RESET: os << "RESET"; break;
-  case Frame::Type::EXCHANGE_IDENTIFICATION: os << "EXCHANGE_IDENTIFICATION"; break;
-  case Frame::Type::FRAME_REJECT: os << "FRAME_REJECT"; break;
-  case Frame::Type::NONRESERVED0: os << "NONRESERVED0"; break;
-  case Frame::Type::NONRESERVED2: os << "NONRESERVED2"; break;
-  case Frame::Type::SET_NORMAL_RESPONSE_MODE: os << "SET_NORMAL_RESPONSE_MODE"; break;
-  case Frame::Type::NONRESERVED1: os << "NONRESERVED1"; break;
-  case Frame::Type::NONRESERVED3: os << "NONRESERVED3"; break;
-  case Frame::Type::TEST: os << "TEST"; break;
-  case Frame::Type::UNSET: os << "UNSET"; break;
-
+  case Frame::Type::I: os << "information"; break;
+  case Frame::Type::RR: os << "receive ready"; break;
+  case Frame::Type::RNR: os << "receive not ready"; break;
+  case Frame::Type::REJ: os << "reject"; break;
+  case Frame::Type::SREJ: os << "selective reject"; break;
+  case Frame::Type::UI: os << "unnumbered information"; break;
+  case Frame::Type::SABM: os << "set asynchronous balanced mode"; break;
+  case Frame::Type::UA: os << "unnumbered acknowledgment"; break;
+  case Frame::Type::SARM_DM: os << "set asynchronous response mode / disconnect mode"; break;
+  case Frame::Type::SIM_RIM: os << "set / request initialization mode "; break;
+  case Frame::Type::DISC_RD: os << "<request> disconnect"; break;
+  case Frame::Type::UP: os << "unnumbered poll"; break;
+  case Frame::Type::RSET: os << "reset"; break;
+  case Frame::Type::XID: os << "exchange identification"; break;
+  case Frame::Type::FRMR: os << "frame reject"; break;
+  case Frame::Type::NR0: os << "nonreserved0"; break;
+  case Frame::Type::NR2: os << "nonreserved2"; break;
+  case Frame::Type::SNRM: os << "set normal response mode"; break;
+  case Frame::Type::NR1: os << "nonreserved1"; break;
+  case Frame::Type::NR3: os << "nonreserved3"; break;
+  case Frame::Type::TEST: os << "test"; break;
+  case Frame::Type::UNSET: os << "unset"; break;
   default: assert(0);
   }
   return os;
@@ -84,11 +82,25 @@ std::ostream& operator<<(std::ostream& os, const StatusError& err)
   case StatusError::InvalidResponse: os << "InvalidResponse"; break;
   case StatusError::InvalidAddress: os << "InvalidAddress"; break;
   case StatusError::InvalidSequence: os << "InvalidSequence"; break;
+  case StatusError::ConnectionError: os << "ConnectionError"; break;
   default: os << "Unknown"; break;
   }
 
   return os;
 }
+
+std::ostream& operator<<(std::ostream& os, const ConnectionStatus& status)
+{
+  switch (status)
+  {
+  case ConnectionStatus::Disconnected: os << "Disconnected"; break;
+  case ConnectionStatus::Connecting: os << "Connecting"; break;
+  case ConnectionStatus::Connected: os << "Connected"; break;
+  default: os << "Unknown"; break;
+  }
+  return os;
+}
+
 } // namespace hdlc
 
 #endif

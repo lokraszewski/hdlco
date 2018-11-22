@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   19-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 21-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #include <array>
@@ -36,7 +36,7 @@ TEST_CASE("Frame Creation")
   {
     Frame frame;
     REQUIRE(frame.get_address() == 0xFF);
-    REQUIRE(frame.get_type() == Frame::Type::INFORMATION);
+    REQUIRE(frame.get_type() == Frame::Type::I);
     REQUIRE(frame.get_recieve_sequence() == 0);
     REQUIRE(frame.get_send_sequence() == 0);
     REQUIRE(frame.has_payload() == false);
@@ -47,7 +47,7 @@ TEST_CASE("Frame Creation")
   SECTION("Serializer")
   {
     const auto payload = std::string("PAYLOAD");
-    Frame      frame(payload, Frame::Type::INFORMATION, true, 0x11, 1, 2);
+    Frame      frame(payload, Frame::Type::I, true, 0x11, 1, 2);
     auto       bytes         = FrameSerializer::serialize(frame);
     const auto expected_ctrl = (1 << 5) | (2 << 1) | (1 << 4);
 
@@ -64,7 +64,7 @@ TEST_CASE("Frame Creation")
   SECTION("Serializer with escape")
   {
     const auto payload = std::vector<uint8_t>({1, 2, 3, 0x7e, 0x7d, 4});
-    Frame      frame(payload, Frame::Type::INFORMATION, true, 0x11, 1, 2);
+    Frame      frame(payload, Frame::Type::I, true, 0x11, 1, 2);
     auto       bytes         = FrameSerializer::serialize(frame);
     auto       escaped_bytes = FrameSerializer::escape(bytes);
 

@@ -108,6 +108,7 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
     }
     else
     {
+      m_log->info("Not connected attempting to connect.");
       auto err = session.connect();
       if (err == StatusError::Success)
       {
@@ -117,6 +118,27 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
       {
         m_log->error("Failed to connect : {}", err);
       }
+    }
+  }
+
+  return 0;
+}
+
+int run_echo_client(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
+{
+
+  using namespace std::chrono_literals;
+  example_io                io(port);
+  SessionClient<example_io> session(io, this_address, target_address);
+  ConnectionStatus          status = ConnectionStatus::Disconnected;
+
+  for (;;)
+  {
+    const auto new_status = session.run();
+    if (new_status != status)
+    {
+      m_log->info("New status: {}", new_status);
+      status = new_status;
     }
   }
 
@@ -142,18 +164,21 @@ int run(int argc, char** argv)
     return -2;
   }
 
-  const auto run_mode = (argc >= 3) ? std::stoi(argv[2]) : 0;
+  const auto run_mode       = (argc >= 3) ? std::stoi(argv[2]) : 0;
+  const auto this_address   = (argc >= 4) ? std::stoi(argv[3]) : 0xFF;
+  const auto target_address = (argc >= 5) ? std::stoi(argv[4]) : 0xFF;
+
   switch (run_mode)
   {
   case 0: m_log->info("Running listener with echo "); return run_listener(port, true);
   case 1: m_log->info("Running listener without echo "); return run_listener(port, false);
   case 2: m_log->info("Running sender "); return run_sender(port);
   case 3:
-  {
-    const auto this_address   = (argc >= 4) ? std::stoi(argv[3]) : 1;
-    const auto target_address = (argc >= 5) ? std::stoi(argv[4]) : 2;
+    m_log->info("Running master session, this address : {}, secondary address {}", this_address, target_address);
     return run_normal_master(port, this_address, target_address);
-  }
+  case 4:
+    m_log->info("Running echo client, this address : {}, secondary address {}", this_address, target_address);
+    return run_echo_client(port, this_address, target_address);
   default: m_log->error("Unknown mode! "); return -1;
   }
 }

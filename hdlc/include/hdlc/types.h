@@ -29,9 +29,17 @@ enum class StatusError
   InvalidResponse,
   InvalidSequence,
   InvalidAddress,
+  ConnectionError,
   FailedToSend,
   NoResponse,
   Busy,
+};
+
+enum class ConnectionStatus
+{
+  Disconnected,
+  Connecting,
+  Connected,
 };
 
 } // namespace hdlc

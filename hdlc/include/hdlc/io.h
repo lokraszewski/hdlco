@@ -12,7 +12,6 @@
 
 namespace hdlc
 {
-
 /**
  * @author     lokraszewski
  * @date       21-Nov-2018
@@ -45,7 +44,6 @@ public:
 
   bool recieve_frame(Frame& f)
   {
-
     const auto start_tick = get_tick();
 
     for (;;)
