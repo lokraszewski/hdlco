@@ -69,6 +69,9 @@ public:
   size_t get_elapsed(const size_t tick) const { return get_tick() - tick; }
   bool   is_expired(const size_t tick, const size_t threshold) const { return get_elapsed(tick) > threshold; }
 
+  auto max_send_size() const { return m_out_pipe.capacity(); }
+  auto max_recieve_size() const { return m_in_pipe.capacity(); }
+
   /*----------  Public interface  ----------*/
   virtual size_t get_tick(void) const   = 0;
   virtual bool   handle_out(void)       = 0;

@@ -38,10 +38,10 @@ public:
     return m_buffer.empty();
   }
 
-  auto space() const noexcept
+  auto capacity() const noexcept
   {
     std::lock_guard<std::mutex> _l(m_mutex);
-    return m_buffer.capacity() - m_buffer.size();
+    return m_buffer.capacity();
   }
 
   auto size() const noexcept
@@ -49,6 +49,9 @@ public:
     std::lock_guard<std::mutex> _l(m_mutex);
     return m_buffer.size();
   }
+
+  auto space() const noexcept { return capacity() - size(); }
+
   void clear(void)
   {
     std::lock_guard<std::mutex> _l(m_mutex);

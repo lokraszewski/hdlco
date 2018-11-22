@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 21-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #pragma once
@@ -54,6 +54,8 @@ public:
           }
         })
   {
+    if (ptr)
+      ptr->flush();
   }
   ~example_io()
   {
@@ -90,6 +92,14 @@ public:
     }
     return readable;
   }
+
+  void reset(void) override
+  {
+    m_out_pipe.clear();
+    m_in_pipe.clear();
+  }
+
+  void sleep(const size_t ms) override { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
 
 private:
   std::shared_ptr<serial::Serial> m_ptr;

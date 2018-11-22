@@ -20,13 +20,15 @@
 #include "hdlc/hdlc.h"
 #include "hdlc/random_frame_factory.h"
 #include "hdlc/stream_helper.h"
+#include "loopback_io.h"
 
 #define CATCH_CONFIG_MAIN // This tells Catch to provide a main() - only do this in one cpp file
 
 #include <catch2/catch.hpp>
 
-static auto l_log = spdlog::stdout_color_mt("hdlc_test");
-
+static auto       l_log            = spdlog::stdout_color_mt("hdlc_test");
+static const auto TEST_REPEAT_LOW  = 5;
+static const auto TEST_REPEAT_HIGH = 1000;
 using namespace hdlc;
 
 TEST_CASE("Frame Creation")
@@ -197,11 +199,10 @@ TEST_CASE("Frame Pipe Test")
 
   SECTION("Array writes - multiple frames.")
   {
-    const auto NUMBER_OF_FRAMES = 5;
-    for (auto i = NUMBER_OF_FRAMES; i--;) pipe1.write(test_data1);
-    REQUIRE(pipe1.frame_count() == NUMBER_OF_FRAMES);
+    for (auto i = TEST_REPEAT_LOW; i--;) pipe1.write(test_data1);
+    REQUIRE(pipe1.frame_count() == TEST_REPEAT_LOW);
 
-    for (auto i = NUMBER_OF_FRAMES; i--;)
+    for (auto i = TEST_REPEAT_LOW; i--;)
     {
       const auto data_out = pipe1.read_frame();
       REQUIRE(data_out.size() == test_data1.size());
@@ -209,29 +210,23 @@ TEST_CASE("Frame Pipe Test")
       REQUIRE(pipe1.frame_count() == i);
     }
   }
+}
 
-  // SECTION("Single frames can be recieved.")
-  // {
-  //   auto frame         = RandomFrameFactory::make_inforamtion(128);
-  //   auto escaped_bytes = FrameSerializer::escape(FrameSerializer::serialize(frame));
-  //   pipe1.recieve(escaped_bytes); // Pretend to recieve from hardware.
-  //   REQUIRE(pipe1.frames_in() == 1);
-  //   auto rxbytes = pipe1.pop_frame();
-  //   REQUIRE(pipe1.empty() == true);
-  //   REQUIRE(rxbytes.size() == escaped_bytes.size());
-  //   REQUIRE(frame == FrameSerializer::deserialize(FrameSerializer::descape(rxbytes)));
-  // }
-  // SECTION("Mulitple frames can be received")
-  // {
-  //   const auto NUMBER_OF_FRAMES = 3;
-  //   auto       f1               = RandomFrameFactory::make_inforamtion(128);
-  //   auto       f2               = RandomFrameFactory::make_inforamtion(128);
-  //   auto       f3               = RandomFrameFactory::make_inforamtion(128);
-  //   pipe1.recieve(FrameSerializer::escape(FrameSerializer::serialize(f1))); // Pretend to recieve from hardware.
-  //   pipe1.recieve(FrameSerializer::escape(FrameSerializer::serialize(f2))); // Pretend to recieve from hardware.
-  //   pipe1.recieve(FrameSerializer::escape(FrameSerializer::serialize(f3))); // Pretend to recieve from hardware.
-  //   REQUIRE(f1 == FrameSerializer::deserialize(FrameSerializer::descape(pipe1.pop_frame())));
-  //   REQUIRE(f2 == FrameSerializer::deserialize(FrameSerializer::descape(pipe1.pop_frame())));
-  //   REQUIRE(f3 == FrameSerializer::deserialize(FrameSerializer::descape(pipe1.pop_frame())));
-  // }
+TEST_CASE("Frame Loopback")
+{
+  loopback_io io; // create io port.
+
+  SECTION("Single frame - Small size.")
+  {
+    for (auto i = TEST_REPEAT_LOW; i--;)
+    {
+      auto  f1 = RandomFrameFactory::make_inforamtion(io.max_send_size() >> 1);
+      Frame f2;
+      l_log->info("{}", f1);
+
+      REQUIRE(io.send_frame(f1));
+      REQUIRE(io.recieve_frame(f2));
+      REQUIRE(f1 == f2);
+    }
+  }
 }
