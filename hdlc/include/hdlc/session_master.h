@@ -60,6 +60,8 @@ class SessionMaster : public Session<io_t>
   using Session<io_t>::m_io;
   using Session<io_t>::m_primary;
   using Session<io_t>::m_secondary;
+  using Session<io_t>::m_send_seq;
+  using Session<io_t>::m_recieve_seq;
 
 public:
   SessionMaster(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session<io_t>(io, paddr, saddr) {}
@@ -121,42 +123,28 @@ public:
 
   StatusError connect()
   {
+    auto ret = StatusError::Success;
+
     if (m_connected == false)
     {
       const Frame cmd(Frame::Type::SET_NORMAL_RESPONSE_MODE, true, m_secondary);
-      if (m_io.send_frame(cmd) == false)
-      {
-        return StatusError::FailedToSend;
-      }
+      Frame       resp;
+      auto        ret = send_command(cmd, resp);
 
-      Frame resp;
-      for (;;)
+      if (ret == StatusError::Success)
       {
-        if (m_io.recieve_frame(resp) == false)
-        {
-          return StatusError::NoResponse;
-        }
-        else if (resp.is_final() == false)
-        {
-          continue;
-        }
-        else if (resp.get_address() != m_primary)
-        {
-          return StatusError::InvalidAddress;
-        }
-        else if (resp.get_type() == Frame::Type::UNNUMBERED_ACKNOWLEDGMENT)
+        if (resp.get_type() == Frame::Type::UNNUMBERED_ACKNOWLEDGMENT)
         {
           m_connected = true;
-          break;
         }
         else
         {
-          return StatusError::InvalidResponse;
+          ret = StatusError::InvalidResponse;
         }
       }
     }
 
-    return StatusError::Success;
+    return ret;
   }
 };
 
