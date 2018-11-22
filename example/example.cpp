@@ -28,7 +28,8 @@
 #include "hdlc/io.h"
 #include "hdlc/random_frame_factory.h"
 #include "hdlc/serializer.h"
-#include "hdlc/session_master.h"
+#include "hdlc/snrm_session_client.h"
+#include "hdlc/snrm_session_master.h"
 #include "hdlc/stream_helper.h"
 
 #include "example_io.h" //IO implementation for HDLC.
@@ -96,8 +97,8 @@ int run_listener(std::shared_ptr<serial::Serial> port, bool echo)
 int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
 {
 
-  example_io                io(port);
-  SessionMaster<example_io> session(io, this_address, target_address);
+  example_io                        io(port);
+  session::snrm::Master<example_io> session(io, this_address, target_address);
 
   using namespace std::chrono_literals;
 
@@ -149,9 +150,9 @@ int run_echo_client(std::shared_ptr<serial::Serial> port, const uint8_t this_add
 {
 
   using namespace std::chrono_literals;
-  example_io                io(port);
-  SessionClient<example_io> session(io, this_address, target_address);
-  ConnectionStatus          status = ConnectionStatus::Disconnected;
+  example_io                        io(port);
+  session::snrm::Client<example_io> session(io, this_address, target_address);
+  ConnectionStatus                  status = ConnectionStatus::Disconnected;
 
   for (;;)
   {
