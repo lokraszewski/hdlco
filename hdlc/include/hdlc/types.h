@@ -27,10 +27,11 @@ enum class StatusError
   Success,
   InvalidParameters,
   InvalidResponse,
-  ErrorFatal,
+  InvalidSequence,
+  InvalidAddress,
   FailedToSend,
   NoResponse,
-  InvalidAddress,
+  Busy,
 };
 
 } // namespace hdlc

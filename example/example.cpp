@@ -109,7 +109,6 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
     else
     {
       auto err = session.connect();
-
       if (err == StatusError::Success)
       {
         m_log->info("Successfully connected.");

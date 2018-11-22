@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 21-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #pragma once
@@ -63,12 +63,6 @@ public:
     }
   }
 
-  void reset()
-  {
-    m_out_pipe.clear();
-    m_in_pipe.clear();
-  }
-
   size_t in_frame_count(void) const { return m_in_pipe.frame_count(); }
 
   size_t get_elapsed(const size_t tick) const { return get_tick() - tick; }
@@ -78,6 +72,7 @@ public:
   virtual size_t get_tick(void) const = 0;
   virtual bool   handle_out(void)     = 0;
   virtual bool   handle_in(void)      = 0;
+  virtual void   reset()              = 0;
 
 private:
 protected:

@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 21-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #pragma once
@@ -16,6 +16,13 @@
 namespace hdlc
 {
 
+enum class ConnectionStatus
+{
+  Disconnected,
+  Connecting,
+  Connected,
+};
+
 template <typename io_t>
 class Session
 {
@@ -24,8 +31,16 @@ public:
   virtual ~Session() {}
 
   auto connected() const noexcept { return m_connected; }
+
   auto primary() const noexcept { return m_primary; }
   auto secondary() const noexcept { return m_secondary; }
+  void reset()
+  {
+    m_send_seq    = 0;
+    m_recieve_seq = 0;
+    m_connected   = false;
+    m_io.reset();
+  }
 
 protected:
   bool  m_connected = false;
@@ -33,6 +48,8 @@ protected:
 
   uint8_t m_primary;
   uint8_t m_secondary;
+  uint8_t m_send_seq    = 0;
+  uint8_t m_recieve_seq = 0;
 };
 
 template <typename io_t>
@@ -48,24 +65,56 @@ public:
   SessionMaster(io_t& io, const uint paddr = 0xFF, const uint8_t saddr = 0xFF) : Session<io_t>(io, paddr, saddr) {}
   virtual ~SessionMaster() {}
 
-  bool test(void)
+  StatusError send_command(const Frame& cmd, Frame& resp)
+  {
+    cmd.set_send_sequence(m_send_seq++);
+
+    if (!m_io.send_frame(cmd))
+    {
+      return StatusError::FailedToSend;
+    }
+
+    StatusError ret = StatusError::Busy;
+
+    do
+    {
+      if (!m_io.recieve_frame(resp))
+        ret = StatusError::NoResponse;
+      else if (!resp.is_final())
+        ret = StatusError::Busy;
+      else if (resp.get_address() != m_primary)
+        ret = StatusError::InvalidAddress;
+      else if (cmd.is_poll() && resp.get_recieve_sequence() != m_send_seq)
+        ret = StatusError::InvalidSequence;
+      else if (resp.get_type() == Frame::Type::UNNUMBERED_ACKNOWLEDGMENT)
+        ret = StatusError::Success;
+      else
+        ret = StatusError::InvalidResponse;
+    } while (ret == StatusError::Busy);
+
+    if (ret != StatusError::Success)
+      m_connected = false;
+
+    return ret;
+  }
+
+  StatusError test(void)
   {
     const std::vector<uint8_t> test_data = {0xAA, 0xBB, 0xCC, 0xDD};
     const Frame                cmd(test_data, Frame::Type::TEST, true, m_secondary); // U frame with test  data.
     Frame                      resp;
 
-    if (m_io.send_frame(cmd) == false)
-      return false;
+    auto ret = send_command(cmd, resp);
 
-    if (m_io.recieve_frame(resp) == false)
-      return false;
-
-    if (resp.has_payload() && resp.get_type() == cmd.get_type())
+    if (ret == StatusError::Success)
     {
-      return (resp.get_payload() == test_data);
+      if (!resp.has_payload() || resp.get_type() != cmd.get_type() || resp.get_payload() != test_data)
+      {
+        ret = StatusError::InvalidResponse;
+      }
     }
 
-    return false;
+    return ret;
   }
 
   void disconnect() { m_connected = false; }
@@ -74,7 +123,7 @@ public:
   {
     if (m_connected == false)
     {
-      const Frame cmd(Frame::Type::SET_NORMAL_RESPONSE_MODE, true, m_secondary); // U frame with test  data.
+      const Frame cmd(Frame::Type::SET_NORMAL_RESPONSE_MODE, true, m_secondary);
       if (m_io.send_frame(cmd) == false)
       {
         return StatusError::FailedToSend;
@@ -126,7 +175,6 @@ public:
 
   void run(void)
   {
-
     /* If we are connected then wait for frames*/
 
     /* If we are not connected then reject everything except setup. */

@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 21-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #pragma once
@@ -91,6 +91,12 @@ public:
       }
     }
     return readable;
+  }
+
+  void reset(void) override
+  {
+    m_out_pipe.clear();
+    m_in_pipe.clear();
   }
 
 private:

@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 21-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #include "hdlc/stream_helper.h"
@@ -79,11 +79,11 @@ std::ostream& operator<<(std::ostream& os, const StatusError& err)
   {
   case StatusError::Success: os << "Success"; break;
   case StatusError::InvalidParameters: os << "InvalidParameters"; break;
-  case StatusError::ErrorFatal: os << "ErrorFatal"; break;
   case StatusError::FailedToSend: os << "FailedToSend"; break;
   case StatusError::NoResponse: os << "NoResponse"; break;
   case StatusError::InvalidResponse: os << "InvalidResponse"; break;
   case StatusError::InvalidAddress: os << "InvalidAddress"; break;
+  case StatusError::InvalidSequence: os << "InvalidSequence"; break;
   default: os << "Unknown"; break;
   }
 
