@@ -29,11 +29,11 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 conan_cmake_run(
-  BASIC_SETUP
-  REQUIRES spdlog/1.2.1@bincrafters/stable
-  REQUIRES boost/1.68.0@conan/stable
-  REQUIRES catch2/2.4.1@bincrafters/stable
   REQUIRES fmt/5.2.1@bincrafters/stable
+  REQUIRES spdlog/1.2.1@bincrafters/stable
+  REQUIRES catch2/2.4.1@bincrafters/stable
+  REQUIRES boost/1.68.0@conan/stable
+  BASIC_SETUP
   CMAKE_TARGETS
   BUILD missing
 )
