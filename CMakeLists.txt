@@ -5,36 +5,49 @@ project(hdlc
   LANGUAGES CXX
   )
 
+# Check for conan cmake and download if needded.
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+   file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/master/conan.cmake"
+                  "${CMAKE_BINARY_DIR}/conan.cmake")
+endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
-message(${CMAKE_BINARY_DIR})
-
-
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# Include the downloaded conan file.
+include(${CMAKE_BINARY_DIR}/conan.cmake)
 
 # Enable/disable testing
 option(TESTS_ENABLED "Enable automatic tests" OFF)
-
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
-
-set(CMAKE_CXX_FLAGS_DEBUG "-Wall -O0 -ggdb")
-set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O2")
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_compile_options("-Wall" "-Wextra" "-Werror" "$<$<CONFIG:RELEASE>:-O3>")
 
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "No build type selected, defaulting to Debug")
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
+conan_cmake_run(
+  BASIC_SETUP
+  REQUIRES spdlog/1.2.1@bincrafters/stable
+  REQUIRES boost/1.68.0@conan/stable
+  REQUIRES catch2/2.4.1@bincrafters/stable
+  REQUIRES fmt/5.2.1@bincrafters/stable
+  CMAKE_TARGETS
+  BUILD missing
+)
 
-find_package(spdlog)  #Example code logging
-find_package(boost COMPONENTS REQUIRED crc circular_buffer)
-find_package(catch2)  #For testing
-find_package(fmt)     #For output stream helper.
 
+
+
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+message(${CMAKE_BINARY_DIR})
+
+# find_package(spdlog)  #Example code logging
+# find_package(boost COMPONENTS REQUIRED crc circular_buffer)
+# find_package(catch2)  #For testing
+# find_package(fmt)     #For output stream helper.
 
 add_subdirectory(${PROJECT_NAME})
 

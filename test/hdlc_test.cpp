@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   19-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 23-11-2018
  */
 
 #include <array>
@@ -104,8 +104,7 @@ TEST_CASE("Frame Serializer")
   {
     // Randomize NUMBER_OF_RUNS frames and make sure when they are
     // serilized/deseriliez that the result matches.
-    const auto NUMBER_OF_RUNS = 1000;
-    for (auto runs = 0; runs < NUMBER_OF_RUNS; ++runs)
+    for (auto runs = 0; runs < TEST_REPEAT_HIGH; ++runs)
     {
       auto frame         = RandomFrameFactory::make();
       auto bytes         = FrameSerializer::serialize(frame);

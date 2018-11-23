@@ -13,8 +13,8 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-  fmt::fmt
-  boost::boost
+  CONAN_PKG::fmt
+  CONAN_PKG::boost
 )
 
 set_target_properties(${PROJECT_NAME}
