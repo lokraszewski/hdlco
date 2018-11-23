@@ -2,9 +2,15 @@ dist: trusty
 sudo: required
 language: cpp
 compiler: clang
+cache:
+  directories:
+    - ~/.conan/data/
 
-env:
-  - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+
+matrix:
+  include:
+    - env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0" BUILD_TYPE=Debug
+    - env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0" BUILD_TYPE=Release
 
 addons:
   apt:
@@ -24,6 +30,5 @@ before_install:
 
 script:
   - mkdir build && cd build
-  - conan install .. --build missing
-  - cmake .. && make
+  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE && make
   - ./bin/hdlc_test
