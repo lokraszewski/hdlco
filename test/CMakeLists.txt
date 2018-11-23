@@ -8,7 +8,9 @@ target_include_directories(hdlc_test
 
 target_link_libraries(hdlc_test
   ${PROJECT_NAME}
-  ${CONAN_LIBS}
+  spdlog::spdlog
+  boost::boost
+  catch2::catch2
 )
 
 set_target_properties(hdlc_test

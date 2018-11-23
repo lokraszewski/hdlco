@@ -12,6 +12,10 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
+target_link_libraries(${PROJECT_NAME}
+  fmt::fmt
+  boost::boost
+)
 
 set_target_properties(${PROJECT_NAME}
   PROPERTIES

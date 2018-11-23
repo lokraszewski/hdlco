@@ -120,7 +120,6 @@ int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_a
         std::string payload = "HELLO";
         m_log->info("Sending unknown frame type : {}", session.send_payload(payload));
       }
-      // std::this_thread::sleep_for(2s);
     }
     else
     {

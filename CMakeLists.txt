@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.9)
 
-
 project(hdlc
   VERSION 1.0.0
   LANGUAGES CXX
   )
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+message(${CMAKE_BINARY_DIR})
+
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -27,6 +28,12 @@ if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "No build type selected, defaulting to Debug")
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
+
+
+find_package(spdlog)  #Example code logging
+find_package(boost COMPONENTS REQUIRED crc circular_buffer)
+find_package(catch2)  #For testing
+find_package(fmt)     #For output stream helper.
 
 
 add_subdirectory(${PROJECT_NAME})
