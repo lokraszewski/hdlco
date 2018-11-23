@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 23-11-2018
  */
 
 #pragma once
@@ -147,7 +147,8 @@ public:
   template <typename iter_t>
   void write(iter_t begin, iter_t end)
   {
-    if ((end - begin) > space())
+    const size_t requested_size = end - begin;
+    if ((requested_size) > space())
       return;
     std::lock_guard<std::mutex> _l(m_mutex);
     m_boundary_count += std::count_if(begin, end, [](const auto byte) { return (byte == protocol_bytes::frame_boundary); });

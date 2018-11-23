@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   22-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 23-11-2018
  */
 
 #pragma once
@@ -89,18 +89,22 @@ public:
   static StatusError default_handler(Client<io_t>& session, const Frame& cmd, Frame& resp)
   {
     std::cout << __FUNCTION__ << " : " << cmd << std::endl;
+    (void)session; // Unused.
+    (void)resp;    // Unused.
     return StatusError::InvalidRequest;
   }
 
   static StatusError default_snrm_handler(Client<io_t>& session, const Frame& cmd, Frame& resp)
   {
     session.set_status(ConnectionStatus::Connected);
+    (void)cmd; // Unused.
     resp = Frame(Frame::Type::UA, true, session.secondary());
     return StatusError::Success;
   }
 
   static StatusError default_test_handler(Client<io_t>& session, const Frame& cmd, Frame& resp)
   {
+    (void)session; // unused
     // Create a frame with identical payload.
     resp = Frame(cmd.get_payload(), Frame::Type::TEST, true, session.secondary());
     return StatusError::Success;
