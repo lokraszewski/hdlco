@@ -5,15 +5,9 @@ project(hdlc
   LANGUAGES CXX
   )
 
-# Check for conan cmake and download if needded.
-if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
-   message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
-   file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/master/conan.cmake"
-                  "${CMAKE_BINARY_DIR}/conan.cmake")
-endif()
 
 # Include the downloaded conan file.
-include(${CMAKE_BINARY_DIR}/conan.cmake)
+include(cmake/conan.cmake)
 
 # Enable/disable testing
 option(TESTS_ENABLED "Enable automatic tests" OFF)
