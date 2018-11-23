@@ -38,16 +38,8 @@ conan_cmake_run(
   BUILD missing
 )
 
-
-
-
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 message(${CMAKE_BINARY_DIR})
-
-# find_package(spdlog)  #Example code logging
-# find_package(boost COMPONENTS REQUIRED crc circular_buffer)
-# find_package(catch2)  #For testing
-# find_package(fmt)     #For output stream helper.
 
 add_subdirectory(${PROJECT_NAME})
 
