@@ -2,7 +2,7 @@
  * @Author: lokraszewski
  * @Date:   15-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 20-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #pragma once
@@ -18,38 +18,45 @@ class Frame
 public:
   enum class Type : uint8_t
   {
-    INFORMATION                    = 0b00000000,
-    RECEIVE_READY                  = 0b00000001,
-    RECEIVE_NOT_READY              = 0b00001001,
-    REJECT                         = 0b00000101,
-    SELECTIVE_REJECT               = 0b00001101,
-    UNNUMBERED_INFORMATION         = 0b00000011,
-    SET_ASYNCHRONOUS_BALANCED_MODE = 0b00101111,
-    UNNUMBERED_ACKNOWLEDGMENT      = 0b01100011,
-    SET_ASYNCHRONOUS_RESPONSE_MODE = 0b00001111,
-    INITIALIZATION                 = 0b00000111,
-    DISCONNECT                     = 0b01000011,
-    UNNUMBERED_POLL                = 0b00100011,
-    RESET                          = 0b10001111,
-    EXCHANGE_IDENTIFICATION        = 0b10101111,
-    FRAME_REJECT                   = 0b10000111,
-    NONRESERVED0                   = 0b00001011,
-    NONRESERVED2                   = 0b01001011,
-    SET_NORMAL_RESPONSE_MODE       = 0b10000011,
-    NONRESERVED1                   = 0b10001011,
-    NONRESERVED3                   = 0b11001011,
-    TEST                           = 0b11100011,
-    UNSET                          = 0xFF,
+    I = 0b00000000,
+
+    RR   = 0b00000001,
+    RNR  = 0b00001001,
+    REJ  = 0b00000101,
+    SREJ = 0b00001101,
+
+    /* Unnumbered types */
+    UI      = 0b00000011,
+    SNRM    = 0b10000011,
+    DISC_RD = 0b01000011,
+    UP      = 0b00100011,
+    UA      = 0b01100011,
+    NR0     = 0b00001011,
+    NR1     = 0b10001011,
+    NR2     = 0b01001011,
+    NR3     = 0b11001011,
+    SIM_RIM = 0b00000111,
+    FRMR    = 0b10000111,
+    SARM_DM = 0b00001111,
+    RSET    = 0b10001111,
+    SARME   = 0b01001111,
+    SNRME   = 0b11001111,
+    SABM    = 0b00101111,
+    XID     = 0b10101111,
+    SABME   = 0b01101111,
+    TEST    = 0b11100011,
+
+    UNSET = 0xFF,
   };
 
-  Frame(const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF, const uint8_t recieve_seq = 0,
+  Frame(const Type type = Type::UNSET, const bool poll = true, const uint8_t address = 0xFF, const uint8_t recieve_seq = 0,
         const uint8_t send_seq = 0)
       : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(recieve_seq & 0b111), m_send_seq(send_seq & 0b111)
   {
   }
 
   template <typename buffer_t>
-  Frame(const buffer_t& buffer, const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF,
+  Frame(const buffer_t& buffer, const Type type = Type::I, const bool poll = true, const uint8_t address = 0xFF,
         const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
       : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(recieve_seq & 0b111), m_send_seq(send_seq & 0b111),
         m_payload(buffer.begin(), buffer.end())
@@ -57,7 +64,7 @@ public:
   }
 
   template <typename iter_t>
-  Frame(iter_t begin, iter_t end, const Type type = Type::INFORMATION, const bool poll = true, const uint8_t address = 0xFF,
+  Frame(iter_t begin, iter_t end, const Type type = Type::I, const bool poll = true, const uint8_t address = 0xFF,
         const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
       : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(recieve_seq & 0b111), m_send_seq(send_seq & 0b111),
         m_payload(begin, end)
@@ -69,13 +76,16 @@ public:
 
   void set_type(const Type type) noexcept { m_type = type; }
   auto get_type() const noexcept { return m_type; }
-  auto is_payload_type() const noexcept { return m_type == Type::INFORMATION || m_type == Type::UNNUMBERED_INFORMATION; }
+  auto is_payload_type() const noexcept { return m_type == Type::I || m_type == Type::UI || m_type == Type::TEST; }
   auto is_empty() const noexcept { return m_type == Type::UNSET; }
-  bool is_information() const noexcept { return m_type == Type::INFORMATION; }
+  auto is_valid() const noexcept { return !is_empty(); }
+  bool is_information() const noexcept { return m_type == Type::I; }
   bool is_supervisory() const noexcept { return (static_cast<uint8_t>(m_type) & 0b11) == 0b01; }
   bool is_unnumbered() const noexcept { return !is_empty() && (static_cast<uint8_t>(m_type) & 0b11) == 0b11; }
+
   void set_poll(bool poll) noexcept { m_poll_flag = poll; }
   auto is_poll() const noexcept { return m_poll_flag; }
+  auto is_final() const noexcept { return is_poll(); }
 
   void set_recieve_sequence(const uint8_t sequence) noexcept { m_recieve_seq = sequence & 0b111; }
   void set_send_sequence(const uint8_t sequence) noexcept { m_send_seq = sequence & 0b111; }
@@ -99,8 +109,6 @@ public:
   bool operator==(const Frame& other) const
   {
     if (get_type() != other.get_type())
-      return false;
-    if (get_address() != other.get_address())
       return false;
     if (m_poll_flag != other.is_poll())
       return false;

@@ -2,14 +2,14 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 20-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #include "hdlc/serializer.h"
 
 #include <algorithm>
 #include <assert.h>
-#include <iostream>
+
 namespace hdlc
 {
 
@@ -19,7 +19,7 @@ auto FrameSerializer::get_frame_type(const uint8_t control)
 {
   if ((control & 1) == 0) // bit 0 clear indicates information frame.
   {
-    return Frame::Type::INFORMATION;
+    return Frame::Type::I;
   }
   else if ((control & 0b11) == 0b01) // bit pattern 0b01 indicates S frame
   {
@@ -30,66 +30,67 @@ auto FrameSerializer::get_frame_type(const uint8_t control)
     auto type = static_cast<Frame::Type>(control & ~((uint8_t)header_bits::poll_flag));
     switch (type)
     {
-    case Frame::Type::INFORMATION:
-    case Frame::Type::RECEIVE_READY:
-    case Frame::Type::RECEIVE_NOT_READY:
-    case Frame::Type::REJECT:
-    case Frame::Type::SELECTIVE_REJECT:
-    case Frame::Type::UNNUMBERED_INFORMATION:
-    case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
-    case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
-    case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE:
-    case Frame::Type::INITIALIZATION:
-    case Frame::Type::DISCONNECT:
-    case Frame::Type::UNNUMBERED_POLL:
-    case Frame::Type::RESET:
-    case Frame::Type::EXCHANGE_IDENTIFICATION:
-    case Frame::Type::FRAME_REJECT:
-    case Frame::Type::NONRESERVED0:
-    case Frame::Type::NONRESERVED2:
-    case Frame::Type::SET_NORMAL_RESPONSE_MODE:
-    case Frame::Type::NONRESERVED1:
-    case Frame::Type::NONRESERVED3:
+    case Frame::Type::I:
+    case Frame::Type::RR:
+    case Frame::Type::RNR:
+    case Frame::Type::REJ:
+    case Frame::Type::SREJ:
+    case Frame::Type::UI:
+    case Frame::Type::SABM:
+    case Frame::Type::UA:
+    case Frame::Type::SARM_DM:
+    case Frame::Type::SIM_RIM:
+    case Frame::Type::DISC_RD:
+    case Frame::Type::UP:
+    case Frame::Type::RSET:
+    case Frame::Type::XID:
+    case Frame::Type::FRMR:
+    case Frame::Type::NR0:
+    case Frame::Type::NR2:
+    case Frame::Type::SNRM:
+    case Frame::Type::NR1:
+    case Frame::Type::NR3:
     case Frame::Type::TEST:
     case Frame::Type::UNSET: return type;
-    default: std::cout << std::hex << "TYPE: 0x" << (int)type << std::endl; return Frame::Type::UNSET;
+    default: return Frame::Type::UNSET;
     }
   }
 }
 
 std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
 {
-  std::vector<uint8_t> frame_serialized;
-  uint8_t              control_byte = static_cast<uint8_t>(frame.get_type());
+  uint8_t control_byte = static_cast<uint8_t>(frame.get_type());
 
   switch (frame.get_type())
   {
-  case Frame::Type::RECEIVE_READY:
-  case Frame::Type::RECEIVE_NOT_READY:
-  case Frame::Type::REJECT:
-  case Frame::Type::SELECTIVE_REJECT: control_byte |= (frame.get_recieve_sequence() & 0b111) << 5; break;
-  case Frame::Type::INFORMATION:
-    control_byte |= (frame.get_send_sequence() & 0b111) << 1 | (frame.get_recieve_sequence() & 0b111) << 5;
-    break;
-  case Frame::Type::UNNUMBERED_INFORMATION:
-  case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
-  case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
-  case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE:
-  case Frame::Type::INITIALIZATION:
-  case Frame::Type::DISCONNECT:
-  case Frame::Type::UNNUMBERED_POLL:
-  case Frame::Type::RESET:
-  case Frame::Type::EXCHANGE_IDENTIFICATION:
-  case Frame::Type::FRAME_REJECT:
-  case Frame::Type::SET_NORMAL_RESPONSE_MODE:
-  case Frame::Type::NONRESERVED0:
-  case Frame::Type::NONRESERVED2:
-  case Frame::Type::NONRESERVED1:
-  case Frame::Type::NONRESERVED3:
+  case Frame::Type::RR:
+  case Frame::Type::RNR:
+  case Frame::Type::REJ:
+  case Frame::Type::SREJ: control_byte |= (frame.get_recieve_sequence()) << 5; break;
+  case Frame::Type::I: control_byte |= (frame.get_send_sequence()) << 1 | (frame.get_recieve_sequence()) << 5; break;
+  case Frame::Type::UI:
+  case Frame::Type::SABM:
+  case Frame::Type::UA:
+  case Frame::Type::SARM_DM:
+  case Frame::Type::SIM_RIM:
+  case Frame::Type::DISC_RD:
+  case Frame::Type::UP:
+  case Frame::Type::RSET:
+  case Frame::Type::XID:
+  case Frame::Type::FRMR:
+  case Frame::Type::SNRM:
+  case Frame::Type::NR0:
+  case Frame::Type::NR2:
+  case Frame::Type::NR1:
+  case Frame::Type::NR3:
   case Frame::Type::TEST: break;
   case Frame::Type::UNSET:
   default: assert(false); // Unknown frame type;
   }
+
+  std::vector<uint8_t> frame_serialized;
+
+  frame_serialized.reserve(frame.is_payload_type() ? (6 + frame.payload_size()) : 6);
 
   if (frame.is_poll())
   {
@@ -140,7 +141,6 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   if (buffer.size() < FRAME_MIN_SIZE)
   {
-    std::cout << "FRAME TOO SMALL" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
@@ -149,19 +149,16 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   if (!is_checksum_valid(it, end))
   {
-    std::cout << "CHECKSUM ERROR" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
   if (*it++ != protocol_bytes::frame_boundary)
   {
-    std::cout << "INVALID START" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
   if (*(--end) != protocol_bytes::frame_boundary)
   {
-    std::cout << "INVALID END" << std::endl;
     return Frame(Frame::Type::UNSET);
   }
 
@@ -176,28 +173,28 @@ Frame FrameSerializer::deserialize(const std::vector<uint8_t> &buffer)
 
   switch (type)
   {
-  case Frame::Type::INFORMATION: return Frame(it, end, type, poll, address, recieve_seq, send_seq);
-  case Frame::Type::REJECT:
-  case Frame::Type::RECEIVE_READY:
-  case Frame::Type::RECEIVE_NOT_READY:
-  case Frame::Type::SELECTIVE_REJECT: return Frame(it, end, type, poll, address, recieve_seq);
-  case Frame::Type::UNNUMBERED_INFORMATION: return Frame(it, end, type, poll, address);
-  case Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE:
-  case Frame::Type::UNNUMBERED_ACKNOWLEDGMENT:
-  case Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE:
-  case Frame::Type::EXCHANGE_IDENTIFICATION:
-  case Frame::Type::SET_NORMAL_RESPONSE_MODE:
-  case Frame::Type::UNNUMBERED_POLL:
-  case Frame::Type::INITIALIZATION:
-  case Frame::Type::DISCONNECT:
-  case Frame::Type::RESET:
-  case Frame::Type::FRAME_REJECT:
-  case Frame::Type::NONRESERVED0:
-  case Frame::Type::NONRESERVED2:
-  case Frame::Type::NONRESERVED1:
-  case Frame::Type::NONRESERVED3:
-  case Frame::Type::TEST: return Frame(type, poll, address);
-  default: std::cout << "UNKNOWN TYPE" << std::endl; return Frame(Frame::Type::UNSET);
+  case Frame::Type::I: return Frame(it, end, type, poll, address, recieve_seq, send_seq);
+  case Frame::Type::REJ:
+  case Frame::Type::RR:
+  case Frame::Type::RNR:
+  case Frame::Type::SREJ: return Frame(it, end, type, poll, address, recieve_seq);
+  case Frame::Type::TEST:
+  case Frame::Type::UI: return Frame(it, end, type, poll, address);
+  case Frame::Type::SABM:
+  case Frame::Type::UA:
+  case Frame::Type::SARM_DM:
+  case Frame::Type::XID:
+  case Frame::Type::SNRM:
+  case Frame::Type::UP:
+  case Frame::Type::SIM_RIM:
+  case Frame::Type::DISC_RD:
+  case Frame::Type::RSET:
+  case Frame::Type::FRMR:
+  case Frame::Type::NR0:
+  case Frame::Type::NR2:
+  case Frame::Type::NR1:
+  case Frame::Type::NR3: return Frame(type, poll, address);
+  default: return Frame(Frame::Type::UNSET);
   }
 }
 

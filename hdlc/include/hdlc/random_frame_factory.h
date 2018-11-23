@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   20-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 20-11-2018
+ * @Last Modified time: 22-11-2018
  */
 
 #pragma once
@@ -11,7 +11,6 @@
 #include "types.h"
 
 #include <algorithm>
-#include <iostream>
 #include <random>
 
 namespace hdlc
@@ -30,26 +29,26 @@ public:
     const auto           recieve_seq = get_random_byte();
     const auto           send_seq    = get_random_byte();
 
-    return Frame(payload, Frame::Type::INFORMATION, poll, address, recieve_seq, send_seq);
+    return Frame(payload, Frame::Type::I, poll, address, recieve_seq, send_seq);
   }
 
   static Frame make_unnumbered(void)
   {
-    static const Frame::Type frame_type[] = {Frame::Type::UNNUMBERED_INFORMATION,
-                                             Frame::Type::SET_ASYNCHRONOUS_BALANCED_MODE,
-                                             Frame::Type::UNNUMBERED_ACKNOWLEDGMENT,
-                                             Frame::Type::SET_ASYNCHRONOUS_RESPONSE_MODE,
-                                             Frame::Type::INITIALIZATION,
-                                             Frame::Type::DISCONNECT,
-                                             Frame::Type::UNNUMBERED_POLL,
-                                             Frame::Type::RESET,
-                                             Frame::Type::EXCHANGE_IDENTIFICATION,
-                                             Frame::Type::FRAME_REJECT,
-                                             Frame::Type::NONRESERVED0,
-                                             Frame::Type::NONRESERVED2,
-                                             Frame::Type::SET_NORMAL_RESPONSE_MODE,
-                                             Frame::Type::NONRESERVED1,
-                                             Frame::Type::NONRESERVED3,
+    static const Frame::Type frame_type[] = {Frame::Type::UI,
+                                             Frame::Type::SABM,
+                                             Frame::Type::UA,
+                                             Frame::Type::SARM_DM,
+                                             Frame::Type::SIM_RIM,
+                                             Frame::Type::DISC_RD,
+                                             Frame::Type::UP,
+                                             Frame::Type::RSET,
+                                             Frame::Type::XID,
+                                             Frame::Type::FRMR,
+                                             Frame::Type::NR0,
+                                             Frame::Type::NR2,
+                                             Frame::Type::SNRM,
+                                             Frame::Type::NR1,
+                                             Frame::Type::NR3,
                                              Frame::Type::TEST};
 
     static std::uniform_int_distribution<uint8_t> distribution(0, 15);
@@ -65,10 +64,10 @@ public:
   static Frame make_supervisory(void)
   {
     static const Frame::Type frame_type[] = {
-        Frame::Type::RECEIVE_READY,
-        Frame::Type::RECEIVE_NOT_READY,
-        Frame::Type::REJECT,
-        Frame::Type::SELECTIVE_REJECT,
+        Frame::Type::RR,
+        Frame::Type::RNR,
+        Frame::Type::REJ,
+        Frame::Type::SREJ,
     };
     static std::uniform_int_distribution<uint8_t> distribution(0, 3);
     const bool                                    poll        = (get_random_byte() & 1) ? true : false;

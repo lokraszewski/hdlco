@@ -9,6 +9,7 @@
 
 #include "types.h"
 #include <boost/circular_buffer.hpp>
+#include <vector>
 
 namespace hdlc
 {
@@ -24,59 +25,49 @@ public:
   auto begin(void) const { return m_buffer.begin(); }
   auto end(void) const { return m_buffer.end(); }
 
-  auto recieve(const uint8_t byte)
+  void recieve(const uint8_t byte)
   {
-
-    if (full())
+    if (full() == false)
     {
-      return false;
-    }
-
-    if (m_frame_incoming == false)
-    {
-      if (byte != protocol_bytes::frame_boundary)
+      if (m_frame_incoming == false)
       {
-        return false;
+        if (byte != protocol_bytes::frame_boundary)
+        {
+          return;
+        }
+        else
+        {
+          /* start timeout. */
+          m_frame_incoming = true;
+        }
       }
       else
       {
-        /* start timeout. */
-        m_frame_incoming = true;
+        if (byte == protocol_bytes::frame_boundary)
+        {
+          m_frame_incoming = false;
+          m_frames_in++;
+        }
       }
-    }
-    else
-    {
-      if (byte == protocol_bytes::frame_boundary)
-      {
-        m_frame_incoming = false;
-        m_frames_in++;
-      }
-    }
 
-    m_buffer.push_back(byte);
-
-    return true;
+      m_buffer.push_back(byte);
+    }
   }
 
-  auto recieve(const std::vector<uint8_t> buffer)
+  void recieve(const std::vector<uint8_t> buffer)
   {
 
-    auto bool success = true;
     for (const auto c : buffer)
     {
-      success = recieve(c);
+      recieve(c);
     }
-
-    return success;
   }
 
   auto pop_frame(void)
   {
     std::vector<uint8_t> frame;
-
     if (m_frames_in == 0)
       return frame;
-
     auto begin = m_buffer.begin();
     auto end   = m_buffer.end();
     auto sof   = std::find(begin, end, protocol_bytes::frame_boundary);
@@ -95,6 +86,7 @@ public:
     return frame;
   }
 
+  auto busy(void) const noexcept { return m_frame_incoming; }
   void reset(void)
   {
     m_buffer.clear();
@@ -105,5 +97,5 @@ private:
   bool                            m_frame_incoming = false;
   size_t                          m_frames_in      = 0;
   boost::circular_buffer<uint8_t> m_buffer;
-};
+}; // namespace hdlc
 } // namespace hdlc
