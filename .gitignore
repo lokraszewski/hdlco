@@ -3,4 +3,4 @@ bin/*
 build/*
 
 Makefile
-*.cmake
+generated/*
