@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include <boost/asio.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <serial/serial.h>
@@ -24,19 +25,17 @@
 #include "hdlc/frame.h"
 #include "hdlc/frame_reciever.h"
 #include "hdlc/hdlc.h"
+#include "hdlc/io.h"
 #include "hdlc/random_frame_factory.h"
 #include "hdlc/serializer.h"
+#include "hdlc/snrm_session_client.h"
+#include "hdlc/snrm_session_master.h"
 #include "hdlc/stream_helper.h"
+
+#include "example_io.h" //IO implementation for HDLC.
 
 using namespace hdlc;
 static auto m_log = spdlog::stdout_color_mt("hdlc");
-
-std::random_device m_rd;          // Will be used to obtain a seed for the random number engine
-std::mt19937       m_gen(m_rd()); // Standard mersenne_twister_engine seeded with rd()
-
-namespace
-{
-};
 
 template <typename T>
 void print_bytes(T& bytes)
@@ -45,87 +44,122 @@ void print_bytes(T& bytes)
   std::cout << std::endl;
 }
 
-int run_loopback(std::shared_ptr<serial::Serial> port, const int number_of_runs)
-{
-  port->flush(); // flush both input and output.
-
-  m_log->info("Loopback test with {} packets. ", number_of_runs);
-  for (auto run = 0; run < number_of_runs; ++run)
-  {
-    auto frame = RandomFrameFactory::make_inforamtion(128);
-    m_log->info("Sending frame: {}", frame);
-    const auto raw_bytes_tx = FrameSerializer::escape(FrameSerializer::serialize(frame));
-    port->write(raw_bytes_tx);
-
-    std::vector<uint8_t> bytes_raw;
-    if (port->read(bytes_raw, raw_bytes_tx.size()) == raw_bytes_tx.size())
-    {
-      auto frame_rx = FrameSerializer::deserialize(FrameSerializer::descape(bytes_raw));
-      if (frame_rx != frame)
-      {
-        m_log->error(" Loopback failed, \n\tsend {}, \n\trecieved: {} \n\rRAW:", frame, frame_rx);
-        print_bytes(bytes_raw);
-        return -1;
-      }
-    }
-    else
-    {
-      m_log->error("Loopback failed for frame: {} ", frame);
-      return -1;
-    }
-  }
-
-  return 0;
-}
-
 int run_sender(std::shared_ptr<serial::Serial> port)
 {
-
-  port->flush(); // flush both input and output.
-
-  std::string payload     = "";
-  uint8_t     recieve_seq = 0;
-  uint8_t     send_seq    = 0;
+  example_io  io(port); // create io port.
+  std::string payload = "";
   while (payload != "quit")
   {
     m_log->info("Please enter command ('quit' to stop)");
     std::cin >> payload;
-
-    Frame frame_tx(payload.begin(), payload.end(), Frame::Type::INFORMATION, true, 0xFF, recieve_seq, send_seq);
-
-    m_log->info("Sending : {}", frame_tx);
-    port->write(FrameSerializer::escape(FrameSerializer::serialize(frame_tx)));
+    Frame f(payload.begin(), payload.end());
+    if (io.send_frame(f))
+    {
+      m_log->info("Sent : {}", f);
+    }
+    else
+    {
+      m_log->error("Failed to send : {}", f);
+    }
   }
 
   return 0;
 }
 
-int run_listener(std::shared_ptr<serial::Serial> port)
+int run_listener(std::shared_ptr<serial::Serial> port, bool echo)
+{
+  example_io io(port); // create io port.
+
+  // auto io = std::make_shared
+  for (;;)
+  {
+    if (io.in_frame_count())
+    {
+      Frame f;
+      if (io.recieve_frame(f))
+      {
+        if (echo)
+          io.send_frame(f);
+
+        m_log->info("Recieved: {}", f);
+        if (f.has_payload())
+        {
+          std::string payload(f.begin(), f.end());
+          m_log->info("Payload: {}", payload);
+          if ("quit" == payload)
+            return 0;
+        }
+      }
+    }
+  }
+}
+
+int run_normal_master(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
 {
 
-  port->flush(); // flush both input and output.
-  FrameCharReciever rx(512);
-  uint8_t           byte;
+  example_io                        io(port);
+  session::snrm::Master<example_io> session(io, this_address, target_address);
+
+  using namespace std::chrono_literals;
+
+  size_t test_count = 0;
+  for (;;)
+  {
+    if (session.connected())
+    {
+      ++test_count;
+
+      const auto err = session.test();
+      if (err != StatusError::Success)
+      {
+        m_log->error("Connection test failed: {}", err);
+      }
+
+      if ((test_count % 100) == 0)
+      {
+        std::string payload = "HELLO";
+        m_log->info("Sending unknown frame type : {}", session.send_payload(payload));
+      }
+    }
+    else
+    {
+      m_log->info("Not connected attempting to connect.");
+
+      {
+        std::string payload = "HELLO";
+        m_log->info("Sending unknown frame type : {}", session.send_payload(payload));
+      }
+
+      const auto err = session.connect();
+      if (err == StatusError::Success)
+      {
+        m_log->info("Successfully connected.");
+      }
+      else
+      {
+        m_log->error("Failed to connect : {}", err);
+      }
+    }
+  }
+
+  return 0;
+}
+
+int run_echo_client(std::shared_ptr<serial::Serial> port, const uint8_t this_address, const uint8_t target_address)
+{
+
+  using namespace std::chrono_literals;
+  example_io                        io(port);
+  session::snrm::Client<example_io> session(io, this_address, target_address);
+  ConnectionStatus                  status = ConnectionStatus::Disconnected;
 
   for (;;)
   {
-    while (!rx.full() && port->read(&byte, 1))
+    const auto new_status = session.run();
+    if (new_status != status)
     {
-      rx.recieve(byte);
-    }
-
-    if (rx.frames_in())
-    {
-      auto frame_rx = FrameSerializer::deserialize(FrameSerializer::descape(rx.pop_frame()));
-      m_log->info("Recieved : {}", frame_rx);
-
-      if (frame_rx.has_payload())
-      {
-        std::string payload(frame_rx.begin(), frame_rx.end());
-        m_log->info("Payload: {}", payload);
-        if ("quit" == payload)
-          return 0;
-      }
+      m_log->info("New status: {}", new_status);
+      status = new_status;
     }
   }
 
@@ -142,7 +176,7 @@ int run(int argc, char** argv)
   }
 
   const std::string port_path(argv[1]);
-  auto              port = std::make_shared<serial::Serial>(port_path, 9600, serial::Timeout::simpleTimeout(500));
+  auto              port = std::make_shared<serial::Serial>(port_path, 9600, serial::Timeout::simpleTimeout(10));
 
   m_log->info("Serial port: {} open: {} ", port_path, port->isOpen());
 
@@ -151,29 +185,23 @@ int run(int argc, char** argv)
     return -2;
   }
 
-  const std::string run_mode = (argc >= 3) ? argv[2] : "loopback";
+  const auto run_mode       = (argc >= 3) ? std::stoi(argv[2]) : 0;
+  const auto this_address   = (argc >= 4) ? std::stoi(argv[3]) : 0xFF;
+  const auto target_address = (argc >= 5) ? std::stoi(argv[4]) : 0xFF;
 
-  m_log->info("Running in {} mode", run_mode);
-
-  if (run_mode == "loopback")
+  switch (run_mode)
   {
-    return run_loopback(port, 10);
+  case 0: m_log->info("Running listener with echo "); return run_listener(port, true);
+  case 1: m_log->info("Running listener without echo "); return run_listener(port, false);
+  case 2: m_log->info("Running sender "); return run_sender(port);
+  case 3:
+    m_log->info("Running master session, this address : {}, secondary address {}", this_address, target_address);
+    return run_normal_master(port, this_address, target_address);
+  case 4:
+    m_log->info("Running echo client, this address : {}, secondary address {}", this_address, target_address);
+    return run_echo_client(port, this_address, target_address);
+  default: m_log->error("Unknown mode! "); return -1;
   }
-  else if (run_mode == "listen")
-  {
-    return run_listener(port);
-  }
-  else if (run_mode == "send")
-  {
-    return run_sender(port);
-  }
-  else
-  {
-    m_log->error("Unknown run mode");
-    return -1;
-  }
-
-  return 0;
 }
 
 int main(int argc, char** argv)
