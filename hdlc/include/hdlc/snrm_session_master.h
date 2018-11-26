@@ -93,8 +93,8 @@ public:
     return ret;
   }
 
-  template <typename buffer_t>
-  StatusError send_payload(const buffer_t& command, buffer_t& response)
+  template <typename tx_buffer_t, typename rx_buffer_t>
+  StatusError send_payload(const tx_buffer_t& command, rx_buffer_t& response)
   {
     const Frame cmd(buffer, Frame::Type::I, true, m_secondary);
     Frame       resp;
