@@ -72,7 +72,7 @@ public:
   auto max_send_size() const { return m_out_pipe.capacity(); }
   auto max_recieve_size() const { return m_in_pipe.capacity(); }
 
-  template <iter_t>
+  template <typename iter_t>
   auto out_bytes(iter_t begin, iter_t end)
   {
     while (m_out_pipe.empty() == false && begin < end)
