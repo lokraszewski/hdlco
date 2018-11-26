@@ -195,7 +195,9 @@ public:
   }
 
 private:
-  mutable std::mutex              m_mutex;
+#if HDLC_USE_STD_MUTEX
+  mutable std::mutex m_mutex;
+#endif
   size_t                          m_boundary_count = 0; // Counts number of frames in the pipe.
   boost::circular_buffer<uint8_t> m_buffer;
 };
