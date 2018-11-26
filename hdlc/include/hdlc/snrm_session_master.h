@@ -96,7 +96,7 @@ public:
   template <typename tx_buffer_t, typename rx_buffer_t>
   StatusError send_payload(const tx_buffer_t& command, rx_buffer_t& response)
   {
-    const Frame cmd(buffer, Frame::Type::I, true, m_secondary);
+    const Frame cmd(command, Frame::Type::I, true, m_secondary);
     Frame       resp;
     const auto  ret = send_command(cmd, resp);
     if (ret == StatusError::Success)
