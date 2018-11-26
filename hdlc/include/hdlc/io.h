@@ -72,7 +72,26 @@ public:
   auto max_send_size() const { return m_out_pipe.capacity(); }
   auto max_recieve_size() const { return m_in_pipe.capacity(); }
 
-  bool handle_in_byte(const uint8_t byte)
+  template <iter_t>
+  auto out_bytes(iter_t begin, iter_t end)
+  {
+    while (m_out_pipe.empty() == false && begin < end)
+    {
+      *begin++ = m_out_pipe.read();
+    }
+    return begin;
+  }
+
+  bool out_byte(uint8_t& byte)
+  {
+    if (m_out_pipe.empty())
+      return false;
+
+    byte = m_out_pipe.read();
+    return true;
+  }
+
+  bool in_byte(const uint8_t byte)
   {
     if (m_in_pipe.full())
       return false;
