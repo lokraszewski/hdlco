@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 26-11-2018
  */
 
 #pragma once
@@ -90,6 +90,19 @@ public:
     const auto  ret = send_command(cmd, resp);
     if (ret == StatusError::Success)
       std::cout << __FUNCTION__ << ' ' << resp << std::endl;
+    return ret;
+  }
+
+  template <typename buffer_t>
+  StatusError send_payload(const buffer_t& command, buffer_t& response)
+  {
+    const Frame cmd(buffer, Frame::Type::I, true, m_secondary);
+    Frame       resp;
+    const auto  ret = send_command(cmd, resp);
+    if (ret == StatusError::Success)
+    {
+      response = resp.get_payload();
+    }
     return ret;
   }
 
