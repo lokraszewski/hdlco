@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 26-11-2018
  */
 
 #pragma once
@@ -71,6 +71,15 @@ public:
 
   auto max_send_size() const { return m_out_pipe.capacity(); }
   auto max_recieve_size() const { return m_in_pipe.capacity(); }
+
+  bool handle_in_byte(const uint8_t byte)
+  {
+    if (m_in_pipe.full())
+      return false;
+
+    m_in_pipe.write(byte);
+    return true;
+  }
 
   /*----------  Public interface  ----------*/
   virtual size_t get_tick(void) const   = 0;
