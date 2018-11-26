@@ -88,8 +88,10 @@ public:
     const Frame cmd(buffer, Frame::Type::I, true, m_secondary);
     Frame       resp;
     const auto  ret = send_command(cmd, resp);
+#if HDLC_USE_IO_STREAM
     if (ret == StatusError::Success)
       std::cout << __FUNCTION__ << ' ' << resp << std::endl;
+#endif
     return ret;
   }
 

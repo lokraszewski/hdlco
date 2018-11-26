@@ -2,6 +2,12 @@
 
 #include <stdint.h>
 
+#ifdef __unix__
+#define HDLC_USE_IO_STREAM 1
+#else
+#define HDLC_USE_IO_STREAM 0
+#endif
+
 namespace hdlc
 {
 

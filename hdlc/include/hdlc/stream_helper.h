@@ -2,15 +2,14 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 26-11-2018
  */
 #pragma once
 
 #include "frame.h"
 #include "types.h"
 
-
-#ifdef __unix__
+#if HDLC_USE_IO_STREAM
 #include <ostream>
 
 namespace hdlc

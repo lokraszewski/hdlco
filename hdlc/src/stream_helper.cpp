@@ -2,12 +2,12 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 26-11-2018
  */
 
 #include "hdlc/stream_helper.h"
 
-#ifdef __unix__
+#if HDLC_USE_IO_STREAM
 
 #include <assert.h>
 #include <fmt/format.h>
