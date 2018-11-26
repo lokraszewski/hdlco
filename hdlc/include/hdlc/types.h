@@ -4,8 +4,12 @@
 
 #ifdef __unix__
 #define HDLC_USE_IO_STREAM 1
+#define HDLC_USE_STD_MUTEX 1
+#define HDLC_USE_STD_MAP 1
 #else
 #define HDLC_USE_IO_STREAM 0
+#define HDLC_USE_STD_MUTEX 0
+#define HDLC_USE_STD_MAP 0
 #endif
 
 namespace hdlc

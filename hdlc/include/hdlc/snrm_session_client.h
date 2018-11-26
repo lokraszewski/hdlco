@@ -10,6 +10,7 @@
 #include "io.h"
 #include "session.h"
 #include "types.h"
+#include <map>
 
 namespace hdlc
 {
