@@ -36,12 +36,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 message(${CMAKE_BINARY_DIR})
 
 add_subdirectory(${PROJECT_NAME})
-
-add_subdirectory(vendor/serial) #serial lib required for the example code.
+add_subdirectory(vendor/serial)   #serial lib required for the example code.
 add_subdirectory(example)
-
 add_subdirectory(test)
-
-
-
-

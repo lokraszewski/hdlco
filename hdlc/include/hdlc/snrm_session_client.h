@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   22-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 23-11-2018
+ * @Last Modified time: 26-11-2018
  */
 
 #pragma once
@@ -10,6 +10,7 @@
 #include "io.h"
 #include "session.h"
 #include "types.h"
+#include <map>
 
 namespace hdlc
 {
@@ -88,7 +89,9 @@ public:
   /* By default if the user does not install a handler this handler will be called.*/
   static StatusError default_handler(Client<io_t>& session, const Frame& cmd, Frame& resp)
   {
+#if HDLC_USE_IO_STREAM
     std::cout << __FUNCTION__ << " : " << cmd << std::endl;
+#endif
     (void)session; // Unused.
     (void)resp;    // Unused.
     return StatusError::InvalidRequest;

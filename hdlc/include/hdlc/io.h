@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 26-11-2018
  */
 
 #pragma once
@@ -71,6 +71,34 @@ public:
 
   auto max_send_size() const { return m_out_pipe.capacity(); }
   auto max_recieve_size() const { return m_in_pipe.capacity(); }
+
+  template <typename iter_t>
+  auto out_bytes(iter_t begin, iter_t end)
+  {
+    while (m_out_pipe.empty() == false && begin < end)
+    {
+      *begin++ = m_out_pipe.read();
+    }
+    return begin;
+  }
+
+  bool out_byte(uint8_t& byte)
+  {
+    if (m_out_pipe.empty())
+      return false;
+
+    byte = m_out_pipe.read();
+    return true;
+  }
+
+  bool in_byte(const uint8_t byte)
+  {
+    if (m_in_pipe.full())
+      return false;
+
+    m_in_pipe.write(byte);
+    return true;
+  }
 
   /*----------  Public interface  ----------*/
   virtual size_t get_tick(void) const   = 0;
