@@ -67,7 +67,7 @@ public:
   {
     auto ret = send_recieve(cmd, resp);
 
-    if (cmd.is_poll())
+    if (cmd.is_poll() && ret == StatusError::Success)
     {
       switch (resp.get_type())
       {
@@ -77,7 +77,10 @@ public:
     }
 
     if (ret != StatusError::Success)
+    {
       disconnect();
+      return StatusError::ConnectionError;
+    }
 
     return ret;
   }
@@ -88,10 +91,6 @@ public:
     const Frame cmd(buffer, Frame::Type::I, true, m_secondary);
     Frame       resp;
     const auto  ret = send_command(cmd, resp);
-#if HDLC_USE_IO_STREAM
-    if (ret == StatusError::Success)
-      std::cout << __FUNCTION__ << ' ' << resp << std::endl;
-#endif
     return ret;
   }
 
