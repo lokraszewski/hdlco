@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 26-11-2018
  */
 
 #pragma once
@@ -67,7 +67,7 @@ public:
   {
     auto ret = send_recieve(cmd, resp);
 
-    if (cmd.is_poll())
+    if (cmd.is_poll() && ret == StatusError::Success)
     {
       switch (resp.get_type())
       {
@@ -77,7 +77,10 @@ public:
     }
 
     if (ret != StatusError::Success)
+    {
       disconnect();
+      return StatusError::ConnectionError;
+    }
 
     return ret;
   }
@@ -88,8 +91,19 @@ public:
     const Frame cmd(buffer, Frame::Type::I, true, m_secondary);
     Frame       resp;
     const auto  ret = send_command(cmd, resp);
+    return ret;
+  }
+
+  template <typename tx_buffer_t, typename rx_buffer_t>
+  StatusError send_payload(const tx_buffer_t& command, rx_buffer_t& response)
+  {
+    const Frame cmd(command, Frame::Type::I, true, m_secondary);
+    Frame       resp;
+    const auto  ret = send_command(cmd, resp);
     if (ret == StatusError::Success)
-      std::cout << __FUNCTION__ << ' ' << resp << std::endl;
+    {
+      response = resp.get_payload();
+    }
     return ret;
   }
 

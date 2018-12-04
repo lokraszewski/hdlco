@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 23-11-2018
+ * @Last Modified time: 26-11-2018
  */
 
 #pragma once
@@ -29,24 +29,32 @@ public:
 
   auto full() const noexcept
   {
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
     return m_buffer.full();
   }
   auto empty() const noexcept
   {
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
     return m_buffer.empty();
   }
 
   auto capacity() const noexcept
   {
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
     return m_buffer.capacity();
   }
 
   auto size() const noexcept
   {
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
     return m_buffer.size();
   }
 
@@ -54,14 +62,18 @@ public:
 
   void clear(void)
   {
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
     m_buffer.clear();
     m_boundary_count = 0;
   }
 
   auto boundary_count(void) const
   {
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
     return m_boundary_count;
   }
   auto frame_count(void) const { return boundary_count() >> 1; }
@@ -84,9 +96,10 @@ public:
   {
     if (empty())
       return 0;
-
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
-    const auto                  byte = m_buffer.front();
+#endif
+    const auto byte = m_buffer.front();
     if (byte == protocol_bytes::frame_boundary)
       --m_boundary_count;
     m_buffer.pop_front();
@@ -100,7 +113,11 @@ public:
       return 0;
 
     buffer.reserve(size());
+
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
+
     std::copy(m_buffer.begin(), m_buffer.end(), std::back_inserter(buffer));
     m_buffer.clear();
     m_boundary_count = 0;
@@ -114,7 +131,9 @@ public:
     if (frame_count() == 0)
       return buffer;
 
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
 
     auto begin = m_buffer.begin();
     auto end   = m_buffer.end();
@@ -137,7 +156,9 @@ public:
   {
     if (full() == false)
     {
+#if HDLC_USE_STD_MUTEX
       std::lock_guard<std::mutex> _l(m_mutex);
+#endif
       if (byte == protocol_bytes::frame_boundary)
         ++m_boundary_count;
       m_buffer.push_back(byte);
@@ -150,7 +171,11 @@ public:
     const size_t requested_size = end - begin;
     if ((requested_size) > space())
       return;
+
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
+
     m_boundary_count += std::count_if(begin, end, [](const auto byte) { return (byte == protocol_bytes::frame_boundary); });
     m_buffer.insert(m_buffer.end(), begin, end);
   }
@@ -159,14 +184,20 @@ public:
   {
     if (buffer.size() > space())
       return;
+
+#if HDLC_USE_STD_MUTEX
     std::lock_guard<std::mutex> _l(m_mutex);
+#endif
+
     m_boundary_count +=
         std::count_if(buffer.begin(), buffer.end(), [](const auto byte) { return (byte == protocol_bytes::frame_boundary); });
     m_buffer.insert(m_buffer.end(), buffer.begin(), buffer.end());
   }
 
 private:
-  mutable std::mutex              m_mutex;
+#if HDLC_USE_STD_MUTEX
+  mutable std::mutex m_mutex;
+#endif
   size_t                          m_boundary_count = 0; // Counts number of frames in the pipe.
   boost::circular_buffer<uint8_t> m_buffer;
 };
