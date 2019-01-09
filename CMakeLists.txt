@@ -22,13 +22,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-# message(${CMAKE_BINARY_DIR})
-
-# find_package(fmt)
-# find_package(boost)
-# find_package(spdlog)
-# find_package(catch2)
-
 conan_cmake_run(
   REQUIRES fmt/5.2.1@bincrafters/stable
   REQUIRES spdlog/1.2.1@bincrafters/stable
@@ -36,7 +29,7 @@ conan_cmake_run(
   REQUIRES boost/1.68.0@conan/stable
   BASIC_SETUP
   CMAKE_TARGETS
-  BUILD missing
+  BUILD all
 )
 
 add_subdirectory(${PROJECT_NAME})
