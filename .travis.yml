@@ -44,10 +44,10 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-7
+            - g++-6
             - cmake
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" BUILD_TYPE=Debug
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6" BUILD_TYPE=Debug
 
     - compiler: g++
       addons:
@@ -55,10 +55,10 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-7
+            - g++-6
             - cmake
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" BUILD_TYPE=Release
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6" BUILD_TYPE=Release
 
 before_install:
     - eval "${MATRIX_EVAL}"
