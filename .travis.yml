@@ -38,28 +38,6 @@ matrix:
       env:
         - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0" BUILD_TYPE=Release
 
-    - compiler: g++
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-6
-            - cmake
-      env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6" BUILD_TYPE=Debug
-
-    - compiler: g++
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-6
-            - cmake
-      env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6" BUILD_TYPE=Release
-
 before_install:
     - eval "${MATRIX_EVAL}"
     - sudo pip install conan
@@ -69,6 +47,6 @@ install:
 
 script:
   - mkdir build && cd build
-  - conan install ..
+  - conan install .. --build all
   - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE && make
   - ./bin/hdlc_test
