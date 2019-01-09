@@ -29,7 +29,7 @@ conan_cmake_run(
   REQUIRES boost/1.68.0@conan/stable
   BASIC_SETUP
   CMAKE_TARGETS
-  BUILD all
+  BUILD fmt spdlog catch2 boost
 )
 
 add_subdirectory(${PROJECT_NAME})
