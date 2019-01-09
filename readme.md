@@ -1,9 +1,7 @@
 # HDLC High-Level Data Link Control 
 
-| Branch | Status|
-| ------- | ----- |
-| master | [![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=master)](https://travis-ci.com/lokraszewski/hdlco) |
-| develop | [![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=develop)](https://travis-ci.com/lokraszewski/hdlco) |
+![](https://img.shields.io/badge/hdlco-1.0.1-brightgreen.svg)
+[![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=master)](https://travis-ci.com/lokraszewski/hdlco) 
 
 This small library provides the means to create and serilize HDLC frames in the non-extended mode.
 
@@ -130,6 +128,7 @@ else
 * The underlaying storage type is vector which requires heap allocation, on embedded platforms I have tested this with FreeRTOS allocator with little issues but it may be easier to operate on buffers that have been pre-allocated. 
 * The sessions are blocking the thread they are ran on. This is so that the user can implement their own threading based on the OS (bare metal, linux).
 * The sessions are very minial implemenations which worked for my application feel free to fork to adapt to your needs.
+* This project uses conan for packages, there are couple of issues with this. To make my travis build work correctly I rebuild all conan dependencies from source. Which means if you are using this project in your code it may download and build boost from source. This is not ideal, I am currently considering solutions to this problem. 
 
 
 ## Prerequisites
