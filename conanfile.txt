@@ -1,0 +1,9 @@
+[requires]
+ zlib/1.2.11@conan/stable
+ fmt/5.2.1@bincrafters/stable
+ spdlog/1.2.1@bincrafters/stable
+ catch2/2.4.1@bincrafters/stable
+ boost/1.68.0@conan/stable
+
+[generators]
+ cmake_find_package

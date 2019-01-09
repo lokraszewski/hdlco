@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 09-01-2019
  */
 
 #include "hdlc/serializer.h"
@@ -113,8 +113,9 @@ std::vector<uint8_t> FrameSerializer::serialize(const Frame &frame)
 }
 std::vector<uint8_t> FrameSerializer::escape(const std::vector<uint8_t> &frame)
 {
-  auto extra_size = std::count_if(frame.begin() + 1, frame.end() - 1,
-                                  [](const auto byte) { return (byte == protocol_bytes::frame_boundary) || protocol_bytes::escape; });
+  auto extra_size = std::count_if(frame.begin() + 1, frame.end() - 1, [](const auto byte) {
+    return (byte == protocol_bytes::frame_boundary) || (byte == protocol_bytes::escape);
+  });
 
   std::vector<uint8_t> escaped;
   escaped.reserve(frame.size() + extra_size);
