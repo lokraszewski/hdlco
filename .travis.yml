@@ -1,35 +1,72 @@
+os: linux
 dist: trusty
 sudo: required
 language: cpp
-compiler: clang
-cache:
-  directories:
-    - ~/.conan/data/
 
+# cache:
+#   directories:
+#     - ~/.conan/data/
 
 matrix:
   include:
-    - env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0" BUILD_TYPE=Debug
-    - env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0" BUILD_TYPE=Release
+# Clang Configuration
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
+          packages:
+            - clang-6.0
+            - cmake
+            - libc++-dev
+            - libc++abi-dev
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0" BUILD_TYPE=Debug
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-6.0
-    packages:
-      - clang-6.0
-      - cmake
-      - libc++-dev
-      - libc++abi-dev
-      - libclang1-6.0
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
+          packages:
+            - clang-6.0
+            - cmake
+            - libc++-dev
+            - libc++abi-dev
+      env:
+        - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0" BUILD_TYPE=Release
+
+    - compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+            - cmake
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" BUILD_TYPE=Debug
+
+    - compiler: g++
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+            - cmake
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" BUILD_TYPE=Release
 
 before_install:
-  - eval "${MATRIX_EVAL}"
-  - sudo pip install conan
-  - conan user
+    - eval "${MATRIX_EVAL}"
+    - sudo pip install conan
+    - conan user
+
+install:
 
 script:
-  - mkdir build && cd build
-  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE && make
+  - mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE && make
   - ./bin/hdlc_test
