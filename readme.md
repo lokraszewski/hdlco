@@ -1,5 +1,9 @@
 # HDLC High-Level Data Link Control 
-[![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=master)](https://travis-ci.com/lokraszewski/hdlco)
+
+| Branch | Status|
+| ------- | ----- |
+| master | [![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=master)](https://travis-ci.com/lokraszewski/hdlco) |
+| develop | [![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=develop)](https://travis-ci.com/lokraszewski/hdlco) |
 
 This small library provides the means to create and serilize HDLC frames in the non-extended mode.
 
@@ -135,9 +139,7 @@ else
 
 ## Build
 ```
-mkdir build
-cd build
-conan install .. 
+mkdir build && cd build
 cmake .. && make
 ```
 
