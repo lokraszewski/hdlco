@@ -22,6 +22,7 @@ addons:
       - cmake
       - libc++-dev
       - libc++abi-dev
+      - libclang1-6.0
 
 before_install:
   - eval "${MATRIX_EVAL}"
