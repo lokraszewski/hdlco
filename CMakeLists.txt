@@ -29,7 +29,7 @@ conan_cmake_run(
   REQUIRES boost/1.68.0@conan/stable
   BASIC_SETUP
   CMAKE_TARGETS
-  BUILD missing
+  BUILD all
 )
 
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
