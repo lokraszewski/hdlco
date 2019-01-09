@@ -139,9 +139,7 @@ else
 
 ## Build
 ```
-mkdir build
-cd build
-conan install .. 
+mkdir build && cd build
 cmake .. && make
 ```
 
