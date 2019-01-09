@@ -23,6 +23,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 conan_cmake_run(
+  REQUIRES zlib/1.2.11@conan/stable
   REQUIRES fmt/5.2.1@bincrafters/stable
   REQUIRES spdlog/1.2.1@bincrafters/stable
   REQUIRES catch2/2.4.1@bincrafters/stable
