@@ -7,7 +7,7 @@ project(hdlc
 
 
 # Include the downloaded conan file.
-include(cmake/conan.cmake)
+# include(cmake/conan.cmake)
 
 # Enable/disable testing
 option(TESTS_ENABLED "Enable automatic tests" OFF)
@@ -22,19 +22,25 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-conan_cmake_run(
-  REQUIRES zlib/1.2.11@conan/stable
-  REQUIRES fmt/5.2.1@bincrafters/stable
-  REQUIRES spdlog/1.2.1@bincrafters/stable
-  REQUIRES catch2/2.4.1@bincrafters/stable
-  REQUIRES boost/1.68.0@conan/stable
-  BASIC_SETUP
-  CMAKE_TARGETS
-  BUILD all
-)
-
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 message(${CMAKE_BINARY_DIR})
+
+find_package(fmt)
+find_package(boost)
+find_package(spdlog)
+find_package(catch2)
+
+# conan_cmake_run(
+#   REQUIRES zlib/1.2.11@conan/stable
+#   REQUIRES fmt/5.2.1@bincrafters/stable
+#   REQUIRES spdlog/1.2.1@bincrafters/stable
+#   REQUIRES catch2/2.4.1@bincrafters/stable
+#   REQUIRES boost/1.68.0@conan/stable
+#   BASIC_SETUP
+#   CMAKE_TARGETS
+#   BUILD all
+# )
+
 
 add_subdirectory(${PROJECT_NAME})
 add_subdirectory(vendor/serial)   #serial lib required for the example code.

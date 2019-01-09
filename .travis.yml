@@ -68,5 +68,7 @@ before_install:
 install:
 
 script:
-  - mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE && make
+  - mkdir build && cd build
+  - conan install ..
+  - cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE && make
   - ./bin/hdlc_test
