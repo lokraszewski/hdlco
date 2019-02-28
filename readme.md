@@ -1,6 +1,7 @@
 # HDLC High-Level Data Link Control 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![](https://img.shields.io/badge/hdlco-1.0.1-brightgreen.svg)
+![](https://img.shields.io/badge/hdlco-1.0.2-brightgreen.svg)
 [![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=master)](https://travis-ci.com/lokraszewski/hdlco) 
 
 This small library provides the means to create and serilize HDLC frames in the non-extended mode.
