@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 26-11-2018
+ * @Last Modified time: 28-02-2019
  */
 
 #pragma once
@@ -18,8 +18,6 @@ namespace hdlc
  * @date       21-Nov-2018
  * @brief      Base class for hardware io.
  *
- * @tparam     impl_t  { description }
- *
  * @details    Requires user byte transfer implementaion. Note the pipes are
  *             thread safe.
  */
@@ -29,20 +27,45 @@ public:
   base_io(const size_t buffer_size = 512) : m_out_pipe(buffer_size), m_in_pipe(buffer_size) {}
   virtual ~base_io() {}
 
+  /**
+   * @author     lokraszewski
+   * @date       28-Feb-2019
+   * @brief      Sends a frame.
+   *
+   * @param[in]  f     Frame reference
+   *
+   * @return     true if successfully written to the out pipe
+   *
+   * @details    Takes a frame object and serialisez it into raw bytes to write
+   *             to the out pipe. Note this does not physically send the frame,
+   *             rather it queues it to be sent at the next opportunity.
+   */
   bool send_frame(const Frame& f)
   {
     const auto raw_bytes_tx = FrameSerializer::escape(FrameSerializer::serialize(f));
 
+    // Check if there is enough space in the pipe to send the bytes.
     if (m_out_pipe.space() < raw_bytes_tx.size())
-    {
-      // not enough space in the pipe
       return false;
-    }
 
     m_out_pipe.write(raw_bytes_tx);
     return true;
   }
 
+  /**
+   * @author     lokraszewski
+   * @date       28-Feb-2019
+   * @brief      Recieve frame
+   *
+   * @param      f     Reference to a frame to object to write to
+   *
+   * @return     true if frame is recieved and valid.
+   *
+   * @details    Checks if there are potential frames in the in pipe, if so the
+   *             frame is decoded and written into the reference object. If no
+   *             valid frame has arrived within the timeout period the in pipe
+   *             is cleared and false is returned.
+   */
   bool recieve_frame(Frame& f)
   {
     const auto start_tick = get_tick();
@@ -59,7 +82,9 @@ public:
       }
       else if (is_expired(start_tick, m_response_timeout))
       {
-        m_in_pipe.clear_partial(); // Clear any partial frames since we dont know if the timeout has occured mid frame.
+        // Clear any partial frames since we dont know if the timeout has
+        // occured mid frame.
+        m_in_pipe.clear_partial();
         return false;
       }
     }

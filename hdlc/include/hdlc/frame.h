@@ -2,7 +2,7 @@
  * @Author: lokraszewski
  * @Date:   15-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 26-11-2018
+ * @Last Modified time: 28-02-2019
  */
 
 #pragma once
@@ -49,12 +49,40 @@ public:
     UNSET = 0xFF,
   };
 
+  /**
+   * @author     lokraszewski
+   * @date       28-Feb-2019
+   * @brief      Construct frame with no payload
+   *
+   * @param[in]  type         Type of frame
+   * @param[in]  poll         Whether frame polling
+   * @param[in]  address      The address of the frame
+   * @param[in]  recieve_seq  The recieve sequence
+   * @param[in]  send_seq     The send sequence
+   *
+   */
   Frame(const Type type = Type::UNSET, const bool poll = true, const uint8_t address = 0xFF, const uint8_t recieve_seq = 0,
         const uint8_t send_seq = 0)
       : m_type(type), m_poll_flag(poll), m_address(address), m_recieve_seq(recieve_seq & 0b111), m_send_seq(send_seq & 0b111)
   {
   }
 
+  /**
+   * @author     lokraszewski
+   * @date       28-Feb-2019
+   * @brief      Constructs the frame from a buffer type with begin() end()
+   *             iterators.
+   *
+   * @param[in]  buffer       The buffer
+   * @param[in]  type         The type
+   * @param[in]  poll         The poll
+   * @param[in]  address      The address
+   * @param[in]  recieve_seq  The recieve sequence
+   * @param[in]  send_seq     The send sequence
+   *
+   * @tparam     buffer_t     Type of buffer
+   *
+   */
   template <typename buffer_t>
   Frame(const buffer_t& buffer, const Type type = Type::I, const bool poll = true, const uint8_t address = 0xFF,
         const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
@@ -63,6 +91,22 @@ public:
   {
   }
 
+  /**
+   * @author     lokraszewski
+   * @date       28-Feb-2019
+   * @brief      Construct the frame from a iterator type.
+   *
+   * @param[in]  begin        The begin
+   * @param[in]  end          The end
+   * @param[in]  type         The type
+   * @param[in]  poll         The poll
+   * @param[in]  address      The address
+   * @param[in]  recieve_seq  The recieve sequence
+   * @param[in]  send_seq     The send sequence
+   *
+   * @tparam     iter_t       Type of iterator.
+   *
+   */
   template <typename iter_t>
   Frame(iter_t begin, iter_t end, const Type type = Type::I, const bool poll = true, const uint8_t address = 0xFF,
         const uint8_t recieve_seq = 0, const uint8_t send_seq = 0)
@@ -73,9 +117,14 @@ public:
 
   void set_address(const uint8_t address) noexcept { m_address = address; }
   auto get_address(void) const noexcept { return m_address; }
-
   void set_type(const Type type) noexcept { m_type = type; }
   auto get_type() const noexcept { return m_type; }
+  void set_poll(bool poll) noexcept { m_poll_flag = poll; }
+  void set_recieve_sequence(const uint8_t sequence) noexcept { m_recieve_seq = sequence & 0b111; }
+  auto get_recieve_sequence() const noexcept { return (is_unnumbered()) ? 0 : m_recieve_seq; }
+  void set_send_sequence(const uint8_t sequence) noexcept { m_send_seq = sequence & 0b111; }
+  auto get_send_sequence() const noexcept { return is_information() ? m_send_seq : 0; }
+
   auto is_payload_type() const noexcept { return m_type == Type::I || m_type == Type::UI || m_type == Type::TEST; }
   auto is_empty() const noexcept { return m_type == Type::UNSET; }
   auto is_valid() const noexcept { return !is_empty(); }
@@ -83,15 +132,8 @@ public:
   bool is_supervisory() const noexcept { return (static_cast<uint8_t>(m_type) & 0b11) == 0b01; }
   bool is_unnumbered() const noexcept { return !is_empty() && (static_cast<uint8_t>(m_type) & 0b11) == 0b11; }
 
-  void set_poll(bool poll) noexcept { m_poll_flag = poll; }
   auto is_poll() const noexcept { return m_poll_flag; }
   auto is_final() const noexcept { return is_poll(); }
-
-  void set_recieve_sequence(const uint8_t sequence) noexcept { m_recieve_seq = sequence & 0b111; }
-  void set_send_sequence(const uint8_t sequence) noexcept { m_send_seq = sequence & 0b111; }
-
-  auto get_recieve_sequence() const noexcept { return (is_unnumbered()) ? 0 : m_recieve_seq; }
-  auto get_send_sequence() const noexcept { return is_information() ? m_send_seq : 0; }
 
   auto                        begin() const { return m_payload.begin(); }
   auto                        end() const { return m_payload.end(); }
@@ -106,6 +148,18 @@ public:
     copy(begin, end, std::back_inserter(m_payload));
   }
 
+  /**
+   * @author     lokraszewski
+   * @date       28-Feb-2019
+   * @brief      Comparison operator
+   *
+   * @param[in]  other  Other frame
+   *
+   * @return     true if frames are identical
+   *
+   * @details    Used to check if 2 frames are the same. Useful for unit testing
+   *             and loopback tests.
+   */
   bool operator==(const Frame& other) const
   {
     if (get_type() != other.get_type())
@@ -122,15 +176,25 @@ public:
     return std::equal(m_payload.begin(), m_payload.end(), other.begin());
   }
 
+  /**
+   * @author     lokraszewski
+   * @date       28-Feb-2019
+   * @brief      Returns true if frames are not the same.
+   *
+   * @param[in]  other  Other frame
+   *
+   * @return     true if frames are different
+   *
+   */
   bool operator!=(const Frame& other) const { return !(*this == other); }
 
 private:
-  Type                 m_type        = Type::UNSET;
-  bool                 m_poll_flag   = false;
-  uint8_t              m_address     = 0xFF;
-  uint8_t              m_recieve_seq = 0;
-  uint8_t              m_send_seq    = 0;
-  std::vector<uint8_t> m_payload;
+  Type                 m_type        = Type::UNSET; //! Stores the frame type.
+  bool                 m_poll_flag   = false;       //! Poll flag
+  uint8_t              m_address     = 0xFF;        //! Address
+  uint8_t              m_recieve_seq = 0;           //! Receive sequence, only lower 3 bits matter
+  uint8_t              m_send_seq    = 0;           //! Send sequence, only lower 3 bits matter.
+  std::vector<uint8_t> m_payload;                   //! Payload. Not sure if vector is the correct choice here.
 };
 
 } // namespace hdlc

@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 26-11-2018
+ * @Last Modified time: 28-02-2019
  */
 
 #pragma once
@@ -26,6 +26,14 @@ namespace session
 namespace snrm
 {
 
+/**
+ * @author     lokraszewski
+ * @date       28-Feb-2019
+ * @brief      Class for master using normal response mode.
+ *
+ * @tparam     io_t  IO type
+ *
+ */
 template <typename io_t>
 class Master : public Session
 {
