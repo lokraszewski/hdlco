@@ -126,6 +126,7 @@ else
 ## Design Notes
 * Currently the library only provides the means to create and serilize HDLC frames, there is no transfer implementaion or session management. This is difficult to implement since I would like for this library to be usable on both desktop and embedded platforms hence for the time being it is up to the user to implement transfer of serialized frames. 
 * The underlaying storage type is vector which requires heap allocation, on embedded platforms I have tested this with FreeRTOS allocator with little issues but it may be easier to operate on buffers that have been pre-allocated. 
+* The pipes used for recieve and transmit use boost circular buffer. While perfect for this application this means dependency on boost. It may be better to copy out the circular buffer header rather than pulling in the entire library.
 * The sessions are blocking the thread they are ran on. This is so that the user can implement their own threading based on the OS (bare metal, linux).
 * The sessions are very minial implemenations which worked for my application feel free to fork to adapt to your needs.
 * This project uses conan for packages, there are couple of issues with this. To make my travis build work correctly I rebuild all conan dependencies from source. Which means if you are using this project in your code it may download and build boost from source. This is not ideal, I am currently considering solutions to this problem. 
