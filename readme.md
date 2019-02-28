@@ -123,6 +123,45 @@ else
 }
 
 ```
+
+### Running a client in normal response mode:
+```cpp
+static io_type io(); //Example io using serial. 
+static session::snrm::Client<serial_io> session(io); //Example session using provided library. 
+
+session.install_handler(Frame::Type::I, /* custom handler goes here */); //User handlers 
+
+for (;;)
+{
+   auto status = session.run();
+   //Handle status, or simply run continiously. 
+}
+```
+
+### Running a master in normal response mode:
+```cpp
+static io_type io(); 
+static session::snrm::Master<io_type> session(io);
+
+for(;;)
+{
+   if (!session.connected())
+   {
+      auto status = session.connect();
+      /* Handle connection success / failure. */
+   }
+   else
+   {
+      /* Do stuff when connected? Or run that in a different thread. For example: */
+      const std::string    payload = "I'M A PAYLOAD";
+      std::vector<uint8_t> response;
+      auto                 ret = session.send_payload(payload, response);
+   }
+}
+```
+
+The session object abstracts the HDLC layer so that the user does not have to worry about such details and can simply send/recieve payloads. Note that you can use the library to just create frames and implement your own session management.
+
 ## Design Notes
 * Currently the library only provides the means to create and serilize HDLC frames, there is no transfer implementaion or session management. This is difficult to implement since I would like for this library to be usable on both desktop and embedded platforms hence for the time being it is up to the user to implement transfer of serialized frames. 
 * The underlaying storage type is vector which requires heap allocation, on embedded platforms I have tested this with FreeRTOS allocator with little issues but it may be easier to operate on buffers that have been pre-allocated. 
