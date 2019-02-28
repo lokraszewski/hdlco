@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   22-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 26-11-2018
+ * @Last Modified time: 28-02-2019
  */
 
 #pragma once
@@ -19,14 +19,18 @@ namespace session
 namespace snrm
 {
 
+/**
+ * @author     lokraszewski
+ * @date       28-Feb-2019
+ * @brief      Class for client using the normal response mode
+ *
+ * @tparam     io_t  IO type
+ *
+ * @details
+ */
 template <typename io_t>
 class Client : public Session
 {
-
-  /* need information handlers. */
-  /* handle I frame*/
-  /* default frame handler. */
-  /* Use a map? or just a table?*/
 
 public:
   using handler_t = std::function<StatusError(Client<io_t>&, const Frame&, Frame&)>;

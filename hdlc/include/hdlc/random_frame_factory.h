@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   20-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 22-11-2018
+ * @Last Modified time: 28-02-2019
  */
 
 #pragma once
@@ -15,8 +15,17 @@
 
 namespace hdlc
 {
+/**
+ * @author     lokraszewski
+ * @date       28-Feb-2019
+ * @brief      Front-end to create random frame objects.
+ *
+ * @details    Used for unit tests.
+ */
 class RandomFrameFactory
 {
+  static std::default_random_engine m_generator;
+
 public:
   RandomFrameFactory()  = delete;
   ~RandomFrameFactory() = delete;
@@ -34,22 +43,10 @@ public:
 
   static Frame make_unnumbered(void)
   {
-    static const Frame::Type frame_type[] = {Frame::Type::UI,
-                                             Frame::Type::SABM,
-                                             Frame::Type::UA,
-                                             Frame::Type::SARM_DM,
-                                             Frame::Type::SIM_RIM,
-                                             Frame::Type::DISC_RD,
-                                             Frame::Type::UP,
-                                             Frame::Type::RSET,
-                                             Frame::Type::XID,
-                                             Frame::Type::FRMR,
-                                             Frame::Type::NR0,
-                                             Frame::Type::NR2,
-                                             Frame::Type::SNRM,
-                                             Frame::Type::NR1,
-                                             Frame::Type::NR3,
-                                             Frame::Type::TEST};
+    static const Frame::Type frame_type[] = {Frame::Type::UI,      Frame::Type::SABM,    Frame::Type::UA,  Frame::Type::SARM_DM,
+                                             Frame::Type::SIM_RIM, Frame::Type::DISC_RD, Frame::Type::UP,  Frame::Type::RSET,
+                                             Frame::Type::XID,     Frame::Type::FRMR,    Frame::Type::NR0, Frame::Type::NR2,
+                                             Frame::Type::SNRM,    Frame::Type::NR1,     Frame::Type::NR3, Frame::Type::TEST};
 
     static std::uniform_int_distribution<uint8_t> distribution(0, 15);
 
@@ -106,7 +103,5 @@ public:
     static std::uniform_int_distribution<uint8_t> m_byte_distribution(0, 0xFF);
     return m_byte_distribution(m_generator);
   }
-
-  static std::default_random_engine m_generator;
 };
 } // namespace hdlc
