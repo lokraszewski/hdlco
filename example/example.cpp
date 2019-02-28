@@ -23,7 +23,6 @@
 #include <spdlog/spdlog.h>
 
 #include "hdlc/frame.h"
-#include "hdlc/frame_reciever.h"
 #include "hdlc/hdlc.h"
 #include "hdlc/io.h"
 #include "hdlc/random_frame_factory.h"

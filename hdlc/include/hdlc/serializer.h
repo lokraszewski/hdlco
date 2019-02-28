@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   16-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 19-11-2018
+ * @Last Modified time: 28-02-2019
  */
 
 #pragma once
@@ -14,12 +14,18 @@
 namespace hdlc
 {
 
+/**
+ * @author     lokraszewski
+ * @date       28-Feb-2019
+ * @brief      Class for serializing/deserializing frames.
+ *
+ * @details    Converts frame objects to char vectors and vice-versa
+ */
 class FrameSerializer
 {
 public:
   static std::vector<uint8_t> serialize(const Frame &frame);
   static std::vector<uint8_t> escape(const std::vector<uint8_t> &frame);
-
   static Frame                deserialize(const std::vector<uint8_t> &buffer);
   static std::vector<uint8_t> descape(const std::vector<uint8_t> &buffer);
 

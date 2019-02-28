@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   21-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 26-11-2018
+ * @Last Modified time: 28-02-2019
  */
 
 #pragma once
@@ -26,7 +26,6 @@
 #include <serial/serial.h>
 
 #include "hdlc/frame.h"
-#include "hdlc/frame_reciever.h"
 #include "hdlc/hdlc.h"
 #include "hdlc/io.h"
 #include "hdlc/random_frame_factory.h"

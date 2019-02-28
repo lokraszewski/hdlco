@@ -2,7 +2,7 @@
  * @Author: Lukasz
  * @Date:   22-11-2018
  * @Last Modified by:   Lukasz
- * @Last Modified time: 26-11-2018
+ * @Last Modified time: 28-02-2019
  */
 #pragma once
 
@@ -14,6 +14,13 @@ namespace hdlc
 {
 namespace session
 {
+/**
+ * @author     lokraszewski
+ * @date       28-Feb-2019
+ * @brief      Class for session.
+ *
+ * @details    Base class for session management.
+ */
 class Session
 {
 public:

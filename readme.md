@@ -1,9 +1,7 @@
 # HDLC High-Level Data Link Control 
 
-| Branch | Status|
-| ------- | ----- |
-| master | [![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=master)](https://travis-ci.com/lokraszewski/hdlco) |
-| develop | [![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=develop)](https://travis-ci.com/lokraszewski/hdlco) |
+![](https://img.shields.io/badge/hdlco-1.0.1-brightgreen.svg)
+[![Build Status](https://travis-ci.com/lokraszewski/hdlco.svg?branch=master)](https://travis-ci.com/lokraszewski/hdlco) 
 
 This small library provides the means to create and serilize HDLC frames in the non-extended mode.
 
@@ -125,11 +123,52 @@ else
 }
 
 ```
+
+### Running a client in normal response mode:
+```cpp
+static io_type io(); //Example io using serial. 
+static session::snrm::Client<serial_io> session(io); //Example session using provided library. 
+
+session.install_handler(Frame::Type::I, /* custom handler goes here */); //User handlers 
+
+for (;;)
+{
+   auto status = session.run();
+   //Handle status, or simply run continiously. 
+}
+```
+
+### Running a master in normal response mode:
+```cpp
+static io_type io(); 
+static session::snrm::Master<io_type> session(io);
+
+for(;;)
+{
+   if (!session.connected())
+   {
+      auto status = session.connect();
+      /* Handle connection success / failure. */
+   }
+   else
+   {
+      /* Do stuff when connected? Or run that in a different thread. For example: */
+      const std::string    payload = "I'M A PAYLOAD";
+      std::vector<uint8_t> response;
+      auto                 ret = session.send_payload(payload, response);
+   }
+}
+```
+
+The session object abstracts the HDLC layer so that the user does not have to worry about such details and can simply send/recieve payloads. Note that you can use the library to just create frames and implement your own session management.
+
 ## Design Notes
 * Currently the library only provides the means to create and serilize HDLC frames, there is no transfer implementaion or session management. This is difficult to implement since I would like for this library to be usable on both desktop and embedded platforms hence for the time being it is up to the user to implement transfer of serialized frames. 
 * The underlaying storage type is vector which requires heap allocation, on embedded platforms I have tested this with FreeRTOS allocator with little issues but it may be easier to operate on buffers that have been pre-allocated. 
+* The pipes used for recieve and transmit use boost circular buffer. While perfect for this application this means dependency on boost. It may be better to copy out the circular buffer header rather than pulling in the entire library.
 * The sessions are blocking the thread they are ran on. This is so that the user can implement their own threading based on the OS (bare metal, linux).
 * The sessions are very minial implemenations which worked for my application feel free to fork to adapt to your needs.
+* This project uses conan for packages, there are couple of issues with this. To make my travis build work correctly I rebuild all conan dependencies from source. Which means if you are using this project in your code it may download and build boost from source. This is not ideal, I am currently considering solutions to this problem. 
 
 
 ## Prerequisites
